@@ -1,0 +1,147 @@
+;|-----------------------------------------------------|
+;| Desparalizar mediante 'Cajitas' con 'Trampa Magica' |
+;|-----------------------------------------------------|
+;* Las 'Cajitas' con 'Trampa Magica' del primer nivel de la 'Mochila' de nuestro personaje tienen que estar visibles
+;** Se recomienda el uso de cualquiera de las 4 teclas direccionales, dependiendo del caso, para activar una 'Cajita' con 'Trampa Magica' del primer nivel de nuestra 'Mochila'
+;** La situacion mas comun es la de ser paralizado por un tercero asi que con pulsar brevemente cualquiera de las alternativas bastaria
+;** El caso mas infrecuente es el de pisar un 'Muro Paralizante' ajeno, he aqui el motivo de eleccion de teclas direccionales, mantener pulsada la direccion mas conveniente (sin obstaculos) hasta evadirnos
+;*** Compatible con el cambio de personajes
+
+set %CAJITAS IUD_LKF
+
+goSub control
+goSub scanHotKey
+
+sub control
+{
+  set #sysMsgCol 1391
+  event SysMessage Desparalizador automatico -Activado-
+  findItem * C_ , #backpackID
+  if #findCnt = 0
+  {
+    set %xBackpackID #cliXRes + #cliLeft
+    set %yBackpackID #cliYRes + #cliTop
+    nextCPos %xBackpackID %yBackpackID
+    wait 10
+    event SysMessage ~ * , Abriendo la 'Mochila' de , #SPC , #charName , ...
+    event Macro 8 7
+    goSub waitCont #backpackID
+  }
+  goSub getCajitas
+  return
+}
+
+sub waitCont
+{
+  set %playCrono #sCnt
+  while #contID <> %1
+  {
+    sleep 1
+    set %stopCrono #sCnt - %playCrono
+    if %stopCrono > 3
+    {
+      break
+    }
+  }
+  return
+}
+
+sub getCajitas
+{
+  findItem %CAJITAS C_ , #backpackID
+  if #findCnt <> 0
+  {
+    set %contCajitasTrampa 0
+    for #findIndex 1 #findCnt
+    {
+      if #findCol = 33
+      {
+        set %findX #findX + 23
+        set %findY #findY + 7
+        set %contCajitasTrampa %contCajitasTrampa + 1
+      }
+    }
+    if %contCajitasTrampa > 0
+    {
+      if %1 = +Desparalizar
+      {
+        click %findX %findY mc
+        goSub waitTrampa
+        if #sysMsg = Ya_puedes_moverte!.
+        {
+          set %contCajitasTrampa %contCajitasTrampa - 1
+        }
+      }
+      if %contCajitasTrampa > 1
+      {
+        set %ExMsgCol 1391
+      }
+      else
+      {
+        set %ExMsgCol 1970
+      }
+      event ExMsg #backpackID 3 %ExMsgCol [ , %contCajitasTrampa , ]
+    }
+    else
+    {
+      sound
+      event ExMsg #backpackID 3 1970 [ , 0 , ]
+      set #sysMsgCol 1970
+      event SysMessage ~[ATENCION]: No hay ninguna 'Cajita' con 'Trampa Magica' en el primer nivel de tu 'Mochila'.
+    }
+  }
+  else
+  {
+    sound
+    set #sysMsgCol 1970
+    event SysMessage ~[ATENCION]: No hay ninguna 'Cajita' en el primer nivel de tu 'Mochila'.
+  }
+  return
+}
+
+sub waitTrampa
+{
+  set %playCrono #sCnt
+  while #sysMsg <> Ya_puedes_moverte!.
+  {
+    sleep 1
+    set %stopCrono #sCnt - %playCrono
+    if %stopCrono > 2
+    {
+      break
+    }
+  }
+  return
+}
+
+sub scanHotKey
+{
+  Loop:
+  {
+    if #cliLogged = 1 && #charGhost = NO
+    {
+                  ;TECLA [Ctrl] [Shift] [Alt]
+      onHotKey UP ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+      {
+        goSub getCajitas +Desparalizar
+      }
+                    ;TECLA [Ctrl] [Shift] [Alt]
+      onHotKey DOWN ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+      {
+        goSub getCajitas +Desparalizar
+      }
+                    ;TECLA [Ctrl] [Shift] [Alt]
+      onHotKey LEFT ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+      {
+        goSub getCajitas +Desparalizar
+      }
+                     ;TECLA [Ctrl] [Shift] [Alt]
+      onHotKey RIGHT ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+      {
+        goSub getCajitas +Desparalizar
+      }
+    }
+  }
+  goTo Loop
+  return
+}

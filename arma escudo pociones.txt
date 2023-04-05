@@ -1,0 +1,375 @@
+;|-----------------------------------------------|
+;| Empuñar 'Arma' y 'Escudo' y toma de pociones  |
+;|-----------------------------------------------|
+
+set %Curacion_Mejorada .vidamejorada             ;[.vidamenor] [.vida] [.vidamejorada]
+set %Agilidad_Mejorada .agilidadmejorada         ;[.agilidad] [.agilidadmejorada]
+set %Fuerza_Mejorada .fuerzamejorada             ;[.fuerza] [.fuerzamejorada]
+                                                 ;[.bendecir]
+set %Energia_Mejorada .energiamejorada           ;[.energia] [.energiamejorada]
+set %Antidoto_Mejorado .antidotomejorada         ;[.antidotomenor] [.antidoto] [.antidotomejorada]
+set %Piel_De_Piedra .pieldepiedra                ;[.pieldepiedra]
+                                                 ;[.armadurareactiva]
+set %Invisibilidad .invisibilidad                ;[.invisibilidad]
+                                                 ;[.mananormal] [.manamejorada]
+                                                 ;[.inteligencia] [.inteligenciamejorada]
+                                                 ;[.disipar]
+set %handARMAS KPH_JPH_POH_SOH_NMH_OMH_FUO_ATF_ZSF_KTF_JTF_BPH_EPH_INF_HNF_GMH_FMH_TSF_WSF_CNF_BNF_WRH_VRH_OPO_SRH_RRH_VOH_QOH_CUH_BUH_XSF_YSF_AUO_JOH_UOH_URH_TRH
+set %ESCUDOS FIK_OIK_AIK_ZHK_MIK_LIK_GIK_NIK_BIK_CIK
+
+goSub control
+goSub setArma
+goSub setEscudo
+goSub scanHotKey
+
+sub control
+{
+  if #cliLogged = 0 || #charGhost = YES
+  {
+    sound
+    set #sysMsgCol 1970
+    display okcancel Se recomienda iniciar este programa estando conectado con el personaje vivo en cuestion para asi configurar un 'Arma' a una mano y 'Escudo' con los que armarse, con el objetivo de evitar el uso de posible armamento secundario y a su vez acelerar el tiempo de respuesta , #DOT
+    if #dispRes = OK
+    {
+      event SysMessage Deteniendo programa... <Parado>
+      stop
+    }
+    set %boolARMA #FALSE
+    set %boolESCUDO #FALSE
+  }
+  set #sysMsgCol 1391
+  event SysMessage Empunhar 'Arma' y 'Escudo' y toma de pociones sin mano libre -Activado-
+  if #cliLogged = 1
+  {
+    findItem #backpackID C_ , #charID
+    if #findCnt = 0
+    {
+      set %xCharID #cliXRes + #cliLeft
+      set %yCharID #cliTop
+      nextCPos %xCharID %yCharID
+      event SysMessage ~ * , Abriendo la ficha de , #SPC , #charName , ...
+      event Macro 8 1
+    }
+    if #charGhost = NO
+    {
+      findItem * C_ , #backpackID
+      if #findCnt = 0
+      {
+        set %xBackpackID #cliXRes + #cliLeft
+        set %yBackpackID #cliYRes + #cliTop
+        nextCPos %xBackpackID %yBackpackID
+        event SysMessage ~ * , Abriendo la 'Mochila' de , #SPC , #charName , ...
+        wait 10
+        event Macro 8 7
+      }
+    }
+  }
+  return
+}
+
+sub setArma
+{
+  if %boolARMA <> #FALSE
+  {
+    loopSetArma:
+    {
+      set #sysMsgCol 1391
+      event SysMessage ~1.- Selecciona el 'Arma' a una mano que contiene el primer nivel de tu 'Mochila' o ficha.
+      set #targCurs 1
+      target
+      set #lTargetKind 1
+      loopTargetArma:
+      {
+        if #targCurs = 0
+        {
+          onHotKey ESC
+          {
+            sound
+            display okcancel Se recomienda configurar un 'Arma' a una mano para asi evitar el uso de posible armamento secundario e incrementar el tiempo de respuesta , #DOT
+            if #dispRes = OK
+            {
+              goTo loopSetArma
+            }
+            set %boolARMA #FALSE
+            return
+          }
+          findItem #lTargetID A
+          if #findCnt = 1
+          {
+            if #findType in %handARMAS
+            {
+              set %handARMA #lTargetID
+              goSub inBackpackCharID %handARMA
+              if #result = #FALSE
+              {
+                goTo loopSetArma
+              }
+              return
+            }
+            else
+            {
+              goSub tryAgain
+              goTo loopSetArma
+            }
+          }
+        }
+        goTo loopTargetArma
+      }
+    }
+  }
+  return
+}
+
+sub setEscudo
+{
+  if %boolESCUDO <> #FALSE
+  {
+    loopSetEscudo:
+    {
+      set #sysMsgCol 1391
+      event SysMessage ~2.- Selecciona el 'Escudo' que contiene el primer nivel de tu 'Mochila' o ficha.
+      set #targCurs 1
+      target
+      set #lTargetKind 1
+      loopTargetEscudo:
+      {
+        if #targCurs = 0
+        {
+          onHotKey ESC
+          {
+            sound
+            display okcancel Se recomienda configurar un 'Escudo' para asi evitar el uso de posible armamento secundario e incrementar el tiempo de respuesta , #DOT
+            if #dispRes = OK
+            {
+              goTo loopSetEscudo
+            }
+            set %boolESCUDO #FALSE
+            return
+          }
+          findItem #lTargetID A
+          if #findCnt = 1
+          {
+            if #findType in %ESCUDOS
+            {
+              set %ESCUDO #lTargetID
+              goSub inBackpackCharID %ESCUDO
+              if #result = #FALSE
+              {
+                goTo loopSetEscudo
+              }
+              return
+            }
+            else
+            {
+              goSub tryAgain
+              goTo loopSetEscudo
+            }
+          }
+        }
+        goTo loopTargetEscudo
+      }
+    }
+  }
+  return
+}
+
+sub scanHotKey
+{
+  Loop:
+  {
+  ;Empuñar 'Arma' y 'Escudo', en el caso de que previamente hayan sido configurados prevaleceran sobre el resto
+                         ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey Z Ctrl      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub armArmaEscudo
+      ;wait 9
+    }
+  ;Tomar pocion de 'Vida Mejorada', en el caso de no disponer de una mano libre se desarmara el 'Arma', dandole prioridad al 'Escudo'
+                         ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey F10      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub drinkPocion %Curacion_Mejorada
+      wait 9
+    }
+  ;Tomar pocion de 'Energia Mejorada', en el caso de no disponer de una mano libre se desarmara el 'Arma', dandole prioridad al 'Escudo'
+                         ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey F11      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub drinkPocion %Energia_Mejorada
+      wait 9
+    }
+  ;Tomar pocion de 'Antidoto Mejorado', en el caso de no disponer de una mano libre se desarmara el 'Arma', dandole prioridad al 'Escudo'
+                         ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey A Ctrl      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub drinkPocion %Antidoto_Mejorado
+      wait 9
+    }
+  ;Tomar pocion de 'Agilidad Mejorada', en el caso de no disponer de una mano libre se desarmara el 'Arma', dandole prioridad al 'Escudo'
+                         ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey C Ctrl      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub drinkPocion %Agilidad_Mejorada
+      wait 9
+    }
+  ;Tomar pocion de 'Fuerza Mejorada', en el caso de no disponer de una mano libre se desarmara el 'Arma', dandole prioridad al 'Escudo'
+                         ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey F Ctrl      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub drinkPocion %Fuerza_Mejorada
+      wait 9
+    }
+  ;Tomar pocion de 'Invisibilidad', en el caso de no disponer de una mano libre se desarmara el 'Arma', dandole prioridad al 'Escudo'
+                         ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey X Ctrl      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub drinkPocion %Invisibilidad
+      wait 9
+    }
+  ;Tomar pocion de 'Piel De Piedra', en el caso de no disponer de una mano libre se desarmara el 'Arma', dandole prioridad al 'Escudo'
+                         ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey F6 Shift      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub drinkPocion %Piel_De_Piedra
+      wait 9
+    }
+  }
+  goTo Loop
+}
+
+sub tryAgain
+{
+  sound
+  event ExMsg #lTargetID 3 1970 Intentalo de nuevo
+  return
+}
+
+sub inBackpackCharID
+{
+  set %itemBuscado %1
+  set %cont 0
+  repeat
+  {
+    findItem %itemBuscado A
+    if #findCnt = 1
+    {
+      event Property #findBagID
+      set %cont %cont + 1
+      set %itemBuscado #findBagID
+    }
+  }
+  until #findBagID = #backpackID || #findBagID = #charID || Banco , #SPC , $Newbie$ In #property || #findBagID = X
+  if %cont > 1
+  {
+    set %itemBuscado %1
+    set %cont %cont - 1
+    for %i %cont 1
+    {
+      findItem %itemBuscado A
+      if #findCnt = 1
+      {
+        event ExMsg #findBagID 3 1970 %i
+        set %itemBuscado #findBagID
+      }
+    }
+    event ExMsg #lTargetID 3 1970 Contenme en el nivel 1 de tu 'Mochila'
+    return #FALSE
+  }
+  else
+  {
+    if #findBagID <> #backpackID && #findBagID <> #charID
+    {
+      event ExMsg #lTargetID 3 1970 Contenme en tu 'Mochila'
+      return #FALSE
+    }
+  }
+  return
+}
+
+sub armArmaEscudo
+{
+  set %lObjectID #lObjectID
+  if %boolESCUDO <> #FALSE
+  {
+    set #lObjectID %ESCUDO
+    event Macro 17 0
+  }
+  if %boolARMA <> #FALSE
+  {
+    set #lObjectID %handARMA
+    event Macro 17 0
+  }
+  wait 5
+  findItem %ESCUDOS , _ , %handARMAS C_ , #charID
+  if #findCnt = 0
+  {
+    goSub armHand %ESCUDOS
+    goSub armHand %handARMAS
+  }
+  else
+  {
+    if #findCnt = 1
+    {
+      if #findType in %handARMAS
+      {
+        goSub armHand %ESCUDOS
+      }
+      else
+      {
+        goSub armHand %handARMAS
+      }
+    }
+    else
+    {
+      set #lObjectID %lObjectID
+    }
+  }
+  return
+}
+
+sub armHand
+{
+  findItem %1 C
+  if #findCnt > 0
+  {
+    set #lObjectID #findID
+    event Macro 17 0
+  }
+  else
+  {
+    findItem %1 G_3
+    if #findCnt > 0
+    {
+      set #lObjectID #findID
+      event Macro 17 0
+    }
+  }
+  set #lObjectID %lObjectID
+  return
+}
+
+sub drinkPocion
+{
+  findItem %ESCUDOS , _ , %handARMAS C_ , #charID
+  if #findCnt = 2
+  {
+    event Macro 24 2
+    set %lObjectID #lObjectID
+    event Macro 1 0 %1
+    if %boolARMA <> #FALSE
+    {
+      set #lObjectID %handARMA
+      event Macro 17 0
+      set #lObjectID %lObjectID
+    }
+    else
+    {
+      goSub armHand %handARMAS
+    }
+  }
+  else
+  {
+    event Macro 1 0 %1
+  }
+  return
+}

@@ -1,0 +1,434 @@
+;|--------------------------------------|
+;|        'Casco' intercambiable        |
+;|--------------------------------------|
+;* Si seleccionamos el 'Casco' dentro de un contenedor que este en la mochila del personaje, en cualquier nivel, y/u otro objeto para cubrir la cabeza aumentara la posibilidad de que no sea saqueado, sobre todo cuando esta accion es automatizada
+;** Si ademas escogemos como contenedor una 'Cajita' aun mayor sera la probabilidad de evitar la sustraccion
+;*** El contenedor del 'Casco' tendra que permanecer abierto, al resucitar en nuestro cuerpo se abrira, o abriran, en la misma posicion que estaba en el momento de la seleccion
+;**** Mientras no se cierre el cliente permaneceran los datos almacenados, compatible con el cambio de personajes
+
+set %CASCOS OSH_TSH_CSH_BSH_ESH_DSH_CRH_ASH_GSH_FSH_NJL_QJL_ZPH_YPH
+set %OBJSCABEZA OSH_TSH_CSH_BSH_ESH_DSH_CRH_ASH_GSH_FSH_NJL_QJL_ZPH_YPH_VVI_IWI_XVI_YVI_WVI_BWI_EWI_WWI_KWI_QSH_VSH_QZH_NZH_PZH_KZH_DZH_OZH_EZH_BZH_TDI_GZH_HWI_MKH_DPH_JWI_CZH_HZH
+set %lTargetID #lTargetID
+
+goSub control
+goSub setCasco
+goSub setObjCabeza
+goSub scanTecla
+
+sub control
+{
+  if #cliLogged = 0
+  {
+    sound
+    set #sysMsgCol 1970
+    display ok No puedes iniciar este programa sin antes conectarte con un personaje ya que tiene que ser configurado , #DOT , #SPC , $$Deteniendo programa... <Parado>
+    stop
+  }
+  if #charGhost = NO
+  {
+    goSub transCharName
+    set #sysMsgCol 1391
+    event SysMessage 'Casco' automaticamente intercambiable por una prenda para cubrir la cabeza ('Resistencia Magica +15', etc.) o 'Casco' ('Del Caballero', 'Del Guerrero', 'Del Nigromante', etc.) -Activado-
+    findItem #backpackID C_ , #charID
+    if #findCnt = 0
+    {
+      set %xCharID #cliXRes + #cliLeft
+      set %yCharID #cliTop
+      nextCPos %xCharID %yCharID
+      event SysMessage ~ * , Abriendo la ficha de , #SPC , %transCharName , ...
+      event Macro 8 1
+    }
+    findItem * C_ , #backpackID
+    if #findCnt = 0
+    {
+      set %xBackpackID #cliXRes + #cliLeft
+      set %yBackpackID #cliYRes + #cliTop
+      nextCPos %xBackpackID %yBackpackID
+      wait 10
+      event SysMessage ~ * , Abriendo la mochila de , #SPC , %transCharName , ...
+      event Macro 8 7
+    }
+    display yesno ¿Tienes el contenedor donde , #SPC , %transCharName , #SPC , portara el 'Casco' y/o la prenda para cubrir la cabeza ('Resistencia Magica +15', etc.) o 'Casco' ('Del Caballero', 'Del Guerrero', 'Del Nigromante', etc.) abierto/s? $$Una vez asignados solo tendras que mantenerlo abierto, al igual que la ficha del personaje.
+    if #dispRes = NO
+    {
+      display ok Cuando termines pulsa la tecla 'Esc' (Escape) para continuar.
+      loopDispNo:
+      {
+        onHotKey ESC
+        {
+          return
+        }
+      }
+      goTo loopDispNo
+    }
+    set %charID #charID
+  }
+  else
+  {
+    sound
+    set #sysMsgCol 1970
+    display ok No puedes iniciar este programa estando muerto puesto que se imposibilita su configuracion , #DOT , #SPC , $$Deteniendo programa... <Parado>
+    stop
+  }
+  return
+}
+
+sub transCharName
+{
+  set %transCharName #charName
+  set %charName #charName
+  str Len #charName
+  set %lenCharName #strRes
+  set %cont 1
+  while %cont <= %lenCharName
+  {
+    str Pos %transCharName #SPC
+    set %index #strRes
+    if %index <> 0
+    {
+      str Del %transCharName %index 1
+      set %transCharName #strRes
+      str Ins %transCharName _ %index
+      set %transCharName #strRes
+      set %cont %index
+    }
+    else
+    {
+      break
+    }
+  }
+  return
+}
+
+sub setCasco
+{
+  loopSetCasco:
+  {
+    set #sysMsgCol 1391
+    event SysMessage ~1.- Selecciona el 'Casco' que contiene tu mochila.
+    set #targCurs 1
+    target
+    set #lTargetKind 1
+    loopTargetCasco:
+    {
+      if #targCurs = 0
+      {
+        onHotKey ESC
+        {
+          sound
+          goTo loopSetCasco
+        }
+        findItem #lTargetID A
+        if #findType in %CASCOS
+        {
+          set %CASCO #findID
+          goSub inBackpackCharID %CASCO
+          set #lTargetID %lTargetID
+          if #result = #FALSE
+          {
+            goTo loopSetCasco
+          }
+          goSub setBagObjsCabezaXY
+          return
+        }
+        else
+        {
+          goSub tryAgain
+          set #lTargetID %lTargetID
+          goTo loopSetCasco
+        }
+      }
+    }
+    goTo loopTargetCasco
+  }
+}
+
+sub setObjCabeza
+{
+  loopSetObjCabeza:
+  {
+    set #sysMsgCol 1391
+    event SysMessage ~2.- Selecciona el objeto que llevaras en la cabeza, prenda para cubrir la cabeza o 'Casco', que contiene tu mochila o ficha.
+    wait 8
+    set #targCurs 1
+    target
+    set #lTargetKind 1
+    loopTargetObjCabeza:
+    {
+      if #targCurs = 0
+      {
+        onHotKey ESC
+        {
+          sound
+          goTo loopSetObjCabeza
+        }
+        findItem #lTargetID A
+        if #lTargetID <> %CASCO && #findType in %OBJSCABEZA
+        {
+          set %OBJCABEZA #findID
+          goSub inBackpackCharID %OBJCABEZA
+          set #lTargetID %lTargetID
+          if #result = #FALSE
+          {
+            goTo loopSetObjCabeza
+          }
+          return
+        }
+        else
+        {
+          goSub tryAgain
+          set #lTargetID %lTargetID
+          goTo loopSetObjCabeza
+        }
+      }
+    }
+    goTo loopTargetObjCabeza
+  }
+}
+
+sub tryAgain
+{
+  sound
+  event ExMsg #lTargetID 3 1970 Intentalo de nuevo
+  return
+}
+
+sub inBackpackCharID
+{
+  set %itemBuscado %1
+  set %cont 0
+  repeat
+  {
+    findItem %itemBuscado A
+    if #findCnt = 1
+    {
+      event Property #findBagID
+      set %cont %cont + 1
+      set %itemBuscado #findBagID
+    }
+  }
+  until #findBagID = #backpackID || #findBagID = #charID || Banco , #SPC , $Newbie$ In #property || #findBagID = X
+  if #findBagID <> #backpackID && #findBagID <> #charID
+  {
+    sound
+    if %cont > 1
+    {
+      set %itemBuscado %1
+      set %cont %cont - 1
+      for %i %cont 1
+      {
+        findItem %itemBuscado A
+        if #findCnt = 1
+        {
+          event ExMsg #findBagID 3 1970 %i
+          set %itemBuscado #findBagID
+        }
+      }
+    }
+    event ExMsg #lTargetID 3 1970 Contenme en tu mochila
+    return #FALSE
+  }
+  return
+}
+
+sub setBagObjsCabezaXY
+{
+  set %itemBuscado %CASCO
+  set %contBagCasco 0
+  repeat
+  {
+    findItem %itemBuscado A
+    if #findCnt = 1
+    {
+      set %contBagCasco %contBagCasco + 1
+      if #findBagID <> #charID
+      {
+        if #findID = %CASCO
+        {
+          set %BAGCASCO #findBagID
+        }
+        set %bagCasco . %contBagCasco #findBagID
+      }
+      else
+      {
+        set %BAGCASCO #backpackID
+        set %bagCasco . %contBagCasco #backpackID
+        findItem * C_ , #backpackID
+      }
+      click #findX #findY dmc
+      set %xBagCont . %contBagCasco #contPosX
+      set %yBagCont . %contBagCasco #contPosY
+      set %itemBuscado #findBagID
+    }
+  }
+  until #findBagID = #backpackID || #findBagID = #charID
+  return
+}
+
+sub getBagObjsCabezaXY
+{
+  set %lObjectID #lObjectID
+  for %i %contBagCasco 1
+  {
+    if %i <> %contBagCasco
+    {
+      nextCPos %xBagCont . %i %yBagCont . %i
+      set #lObjectID %bagCasco . %i
+      event Macro 17 0
+      goSub waitBag #lObjectID
+    }
+    else
+    {
+      goSub waitBag #backpackID
+    }
+  }
+  set #lObjectID %lObjectID
+  return
+}
+
+sub waitBag
+{
+  while #contID <> %1
+  {
+    wait 1
+  }
+  return
+}
+
+sub scanTecla
+{
+  while #TRUE
+  {
+    goSub filterHotKey
+    goSub corpseResurrection
+  }
+  return
+}
+
+sub corpseResurrection
+{
+  if Tu_espiritu_retorna_a_su_cuerpo. = #sysMsg
+  {
+    goSub getBagObjsCabezaXY
+  }
+  return
+}
+
+sub filterHotKey
+{
+  if #charID = %charID
+  {
+    if #charGHOST = NO
+    {
+                       ;TECLA [Ctrl] [Shift] [Alt]
+      onHotKey INSERT  ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+      {
+        goSub disarmObjCabeza
+        goSub armObjCabeza
+      }
+    }
+    else
+    {
+      nextCPos %xBagCont . %contBagCasco %yBagCont . %contBagCasco
+    }
+  }
+  return
+}
+
+sub disarmObjCabeza
+{
+  if #charGHOST = NO
+  {
+    findItem %OBJCABEZA C_ , #charID
+    if #findCnt = 1
+    {
+      exevent Drag %OBJCABEZA
+      goSub waitDrag %OBJCABEZA
+      exevent Dropc %BAGCASCO
+      goSub waitDrop %OBJCABEZA %BAGCASCO
+      return %CASCO
+    }
+    else
+    {
+      findItem %CASCO C_ , #charID
+      if #findCnt = 1
+      {
+        exevent Drag %CASCO
+        goSub waitDrag %CASCO
+        exevent Dropc %BAGCASCO
+        goSub waitDrop %CASCO %BAGCASCO
+      }
+      else
+      {
+        findItem %OBJSCABEZA C_ , #charID
+        if #findCnt = 1
+        {
+          exevent Drag #findID
+          goSub waitDrag #findID
+          exevent Dropc %BAGCASCO
+          goSub waitDrop #findID %BAGCASCO
+        }
+      }
+    }
+  }
+  return %OBJCABEZA
+}
+
+sub armObjCabeza
+{
+  if #charGHOST = NO
+  {
+    findItem #result A ;, %BAGCASCO
+    if #findCnt = 1
+    {
+      exevent Drag #result
+      goSub waitDrag #result
+      exevent Droppd
+      goSub waitDrop #result #CHARID
+    }
+    else
+    {
+      findItem %OBJSCABEZA A ;, %BAGCASCO
+      if #findCnt = 1
+      {
+        exevent Drag #findID
+        goSub waitDrag #findID
+        exevent Droppd
+        goSub waitDrop #findID #CHARID
+      }
+    }
+  }
+  return
+}
+
+sub waitDrag
+{
+  set %playCrono #sCnt2
+  repeat
+  {
+    set %stopCrono #sCnt2 - %playCrono
+    if %stopCrono > 2
+    {
+      break
+    }
+  }
+  until #contKind = YMAC
+  wait 1
+  return
+}
+
+sub waitDrop
+{
+  set %playCrono #sCnt2
+  repeat
+  {
+    set %stopCrono #sCnt2 - %playCrono
+    if %stopCrono > 2
+    {
+      break
+    }
+  }
+  until #contKind <> YMAC
+  wait 2
+  return
+}

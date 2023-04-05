@@ -1,0 +1,202 @@
+;|-------------------------------|
+;| Selector de 'Flechas Magicas' |
+;|-------------------------------|
+;* Se recomienda llevar una 'Flecha Magica' de cada tipo deseado ('Punzante', 'Helada', 'Explosiva', 'Envenenada' y/o 'Con Punta De Plata') en el primer nivel de la 'Mochila' del personaje
+;* Es contraproducente portar mas de un monton de 'Flechas Magicas' del mismo tipo, se incrementa el tiempo de respuesta de este programa
+;* Es innecesario tener mas de una 'Flecha Magica' de cada tipo deseado
+;** Compatible con el cambio de personajes
+
+set %ARCOS WOH_TOH
+set %ArcosDeMaderaMagica 0
+set %FLECHAS RWF
+set %colPunzante 1109
+set %colHelada 1152
+set %colExplosiva 1914
+set %colEnvenenada 1927
+set %colConPuntaDePlata 1154
+set %colNoMagica 0
+
+goSub control
+goSub scanTecla
+
+sub control
+{
+  if #cliLogged = 1 && #charGhost = NO
+  {
+    goSub transCharName
+    findItem #backpackID C_ , #charID
+    if #findCnt = 0
+    {
+      set %xCharID #cliXRes + #cliLeft
+      set %yCharID #cliTop
+      nextCPos %xCharID %yCharID
+      event SysMessage ~ * , Abriendo la ficha de , #SPC , #charName , ...
+      event Macro 8 1
+    }
+    findItem * C_ , #backpackID
+    if #findCnt = 0
+    {
+      set %xBackpackID #cliXRes + #cliLeft
+      set %yBackpackID #cliYRes + #cliTop
+      nextCPos %xBackpackID %yBackpackID
+      wait 10
+      event SysMessage ~ * , Abriendo la mochila de , #SPC , #charName , ...
+      event Macro 8 7
+    }
+    findItem %FLECHAS C
+    if #findCnt > 0
+    {
+      for #findIndex 1 #findCnt
+      {
+        if #findCol = %colPunzante || #findCol = %colHelada || #findCol = %colExplosiva || #findCol = %colEnvenenada || #findCol = %colConPuntaDePlata
+        {
+          if #findBagID <> #backpackID && %msgNotFirstLevelBackpackID <> #TRUE
+          {
+            set %msgNotFirstLevelBackpackID #TRUE
+            display ok Se recomienda portar una 'Flecha Magica' de cada tipo deseado ('Punzante', 'Helada', 'Explosiva', 'Envenenada' y/o 'Con Punta De Plata') en el primer nivel de la 'Mochila' de , #SPC , #charName , #DOT
+          }
+        }
+        else
+        {
+          if #findCol = %colNoMagica
+          {
+            set %msgNotNoMagica #FALSE
+          }
+        }
+      }
+      if %msgNotNoMagica <> #FALSE
+      {
+        display ok Puede que , #SPC , #charName , #SPC , no tenga municion dentro de su 'Mochila', 'Flechas' normales, no hay ninguna en los contenedores abiertos que forman parte ella , #DOT
+      }
+    }
+    else
+    {
+      event ExMsg #charID 3 1970 [ , FLECHAS , ]
+    }
+    findItem %ARCOS C
+    if #findCnt > 0
+    {
+      for #findIndex 1 #findCnt
+      {
+        event Property #findID
+        goSub getArcoDeMaderaMagica
+        if #result = #TRUE
+        {
+          set %ArcosDeMaderaMagica %ArcosDeMaderaMagica + 1
+        }
+      }
+      if %ArcosDeMaderaMagica = 0
+      {
+        event ExMsg #charID 3 1970 [ , ARCO MAD. MAG. , ]
+      }
+      else
+      {
+        if %ArcosDeMaderaMagica > 1
+        {
+          display ok Es innecesario llevar mas de un 'Arco De Madera Magica' , #DOT
+        }
+      }
+    }
+    else
+    {
+      event ExMsg #charID 3 1970 [ , ARCO MAD. MAG. , ]
+    }
+  }
+  set #sysMsgCol 1391
+  event SysMessage Selector de 'Flechas Magicas' -Activado-
+  return
+}
+
+sub getArcoDeMaderaMagica
+{
+  str Pos #property ( 1
+  set #strRes #strRes - 2
+  str Left #property #strRes
+  if #strRes = #SPC , Arco , #SPC , De , #SPC , Madera , #SPC , Magica
+  {
+    set %cntArcoDeMaderaMagica %cntArcoDeMaderaMagica + 1
+    set %ArcoDeMaderaMagica . %cntArcoDeMaderaMagica #findID
+    return #TRUE
+  }
+  return #FALSE
+}
+
+sub scanTecla
+{
+  while #TRUE
+  {
+    goSub filterHotKey
+  }
+  return
+}
+
+sub filterHotKey
+{
+  if #charGHOST = NO
+  {
+                     ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey A       ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub selectFlechaMagica %colPunzante PUNZANTE
+    }
+                     ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey B       ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub selectFlechaMagica %colHelada HELADA
+    }
+                     ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey C       ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub selectFlechaMagica %colExplosiva EXPLOSIVA
+    }
+                     ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey D       ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub selectFlechaMagica %colEnvenenada ENVENENADA
+    }
+                     ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey E       ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub selectFlechaMagica %colConPuntaDePlata PLATEADA
+    }
+  }
+  return
+}
+
+sub selectFlechaMagica
+{
+  findItem %FLECHAS C
+  if #findCnt > 0
+  {
+    for #findIndex 1 #findCnt
+    {
+      if #findCol = %1
+      {
+        set %lObjectID #lObjectID
+        set #lObjectID #findID
+        event Macro 17 0
+        wait 5
+        set #lObjectID %lObjectID
+        if #sysMsg <> No_puedes_usar_eso_donde_se_encuentra... && #sysMsg <> Cambias_la_municion_de_tu_arco_por_flechas_normales!.
+        {
+          event ExMsg #charID 3 %1 [ , F. , #SPC , %2 , ]
+          set %locatedFlechaMagica #TRUE
+          break
+        }
+      }
+    }
+    if %locatedFlechaMagica = #TRUE
+    {
+      set %locatedFlechaMagica #FALSE
+    }
+    else
+    {
+      event ExMsg #charID 3 1970 [ , F. , #SPC , %2 , ]
+    }
+  }
+  else
+  {
+    event ExMsg #charID 3 1970 [ , FLECHAS , ]
+  }
+  return
+}

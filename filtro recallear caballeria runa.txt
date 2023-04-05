@@ -1,0 +1,36 @@
+;|-----------------------------------------------------------------------|
+;| Filtro del que depende el programa para 'Viaje Sagrado' mediante runa |
+;|-----------------------------------------------------------------------|
+;* No es necesario abrirme ('Open'/'Reopen') ni iniciarme ('Start') mediante 'EasyUO.exe'.
+
+if %0 = 1
+{
+  set %count_jIndex #jIndex ;Previous of journal's last line
+  event Macro 1 0 .logout_seguro
+  while #TRUE
+  {
+    if #jIndex > %count_jIndex
+    {
+      set %count_jIndex %count_jIndex + 1
+      scanJournal %count_jIndex
+      if #jColor = 1153
+      {
+        if Puedes_desconectar_de_forma_segura. in #journal
+        {
+          set %actosCobardes #FALSE
+          exit
+        }
+        if Te_quedan in #journal && segundos_para_poder_desconectar_de_forma_segura_si_te_encuentras_en_una_casa. in #journal
+        {
+          set %actosCobardes N/A
+          set %journal #journal
+          exit
+        }
+      }
+    }
+  }
+}
+else
+{
+  stop
+}

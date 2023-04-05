@@ -1,0 +1,435 @@
+;|----------------------------------------|
+;| 'Amuleto De Proteccion' intercambiable |
+;|----------------------------------------|
+;* Si seleccionamos el 'Amuleto De Proteccion' dentro de un contenedor que este en la 'Mochila' del personaje, en cualquier nivel, aumentara la posibilidad de que no sea saqueado, sobre todo cuando esta accion es automatizada
+;** Si ademas escogemos como contenedor una 'Cajita' aun mayor sera la probabilidad de evitar la sustraccion
+;*** El contenedor del 'Amuleto De Proteccion' tendra que permanecer abierto, al resucitar en nuestro cuerpo se abrira, o abriran, en la misma posicion que estaba en el momento de la seleccion
+;**** Mientras no se cierre el cliente permaneceran los datos almacenados, compatible con el cambio de personajes
+;***** Debido a las extensas verificaciones en tiempo real se recomienda mantener pulsada la tecla, o combinacion de ellas, vinculada al uso del 'Amuleto De Proteccion' hasta que la correspondiente accion se inicie
+;****** Si no pasa nada se da por entendido que el 'Amuleto De Proteccion' aun no se ha recargado, el motivo de esto es que es completamente innecesario
+
+set %delayAmulProtec #FALSE
+set %lTargetID #lTargetID
+
+goSub control
+goSub transCharName
+goSub setAmulProtec
+goSub setColl
+goSub scanDiaroTecla
+
+sub control
+{
+  if #cliLogged = 0
+  {
+    sound
+    display ok No puedes iniciar este programa sin antes conectarte con un personaje ya que tiene que ser configurado , #DOT , #SPC , $$Deteniendo programa... <Parado>
+    stop
+  }
+  if #charGhost = NO
+  {
+    set #sysMsgCol 1391
+    event SysMessage 'Amuleto De Proteccion' automaticamente intercambiable por un 'Collarin' o 'Collar' -Activado-
+    findItem #backpackID C_ , #charID
+    if #findCnt = 0
+    {
+      set %xCharID #cliXRes + #cliLeft
+      set %yCharID #cliTop
+      nextCPos %xCharID %yCharID
+      event SysMessage ~ * , Abriendo la ficha de , #SPC , #charName , ...
+      event Macro 8 1
+    }
+    findItem * C_ , #backpackID
+    if #findCnt = 0
+    {
+      set %xBackpackID #cliXRes + #cliLeft
+      set %yBackpackID #cliYRes + #cliTop
+      nextCPos %xBackpackID %yBackpackID
+      wait 10
+      event SysMessage ~ * , Abriendo la 'Mochila' de , #SPC , #charName , ...
+      event Macro 8 7
+    }
+    set %charID #charID
+    display yesno ¿Tienes el/los contenedor/es donde , #SPC , #charName , #SPC , portara el 'Amuleto De Proteccion' y 'Collarin' o 'Collar' abierto/s? $$Una vez asignado/s solo tendras que mantener abierto el que contenga el 'Amuleto De Proteccion', al igual que la ficha del personaje.
+    if #dispRes = NO
+    {
+      display ok Cuando termines pulsa la tecla 'Esc' (Escape) para continuar.
+      loopDispNo:
+      {
+        onHotKey ESC
+        {
+          return
+        }
+      }
+      goTo loopDispNo
+    }
+  }
+  else
+  {
+    sound
+    set #sysMsgCol 1970
+    display ok No puedes iniciar este programa estando muerto puesto que se imposibilita su configuracion , #DOT , #SPC , $$Deteniendo programa... <Parado>
+    stop
+  }
+  return
+}
+
+sub transCharName
+{
+  set %transCharName #charName
+  str Count %transCharName #SPC
+  set %transCnt #strRes
+  for %i 1 %transCnt
+  {
+    str Pos %transCharName #SPC
+    set %index #strRes
+    str Del %transCharName %index 1
+    str Ins #strRes _ %index
+    set %transCharName #strRes
+  }
+  return
+}
+
+sub setAmulProtec
+{
+  loopSetAmulProtec:
+  {
+    set #sysMsgCol 1391
+    event SysMessage ~1.- Selecciona el 'Amuleto De Proteccion' que contiene tu 'Mochila'.
+    set #targCurs 1
+    target
+    set #lTargetKind 1
+    loopTargetAmulProtec:
+    {
+      if #targCurs = 0
+      {
+        onHotKey ESC
+        {
+          sound
+          goTo loopSetAmulProtec
+        }
+        event Property #lTargetID
+        if Amuleto , #SPC , De , #SPC , Proteccion in #property
+        {
+          set %AMULPROTEC #lTargetID
+          goSub inBackpackCharID %AMULPROTEC
+          set #lTargetID %lTargetID
+          if #result = #FALSE
+          {
+            goTo loopSetAmulProtec
+          }
+          goSub setBagAmulProtecXY
+          return
+        }
+        else
+        {
+          goSub tryAgain
+          set #lTargetID %lTargetID
+          goTo loopSetAmulProtec
+        }
+      }
+    }
+    goTo loopTargetAmulProtec
+  }
+}
+
+sub setColl
+{
+  loopSetColl:
+  {
+    set #sysMsgCol 1391
+    event SysMessage ~2.- Selecciona el objeto que llevaras alrededor del cuello, 'Collarin' o 'Collar', que contiene tu 'Mochila' o ficha.
+    wait 8
+    set #targCurs 1
+    target
+    set #lTargetKind 1
+    loopTargetColl:
+    {
+      if #targCurs = 0
+      {
+        onHotKey ESC
+        {
+          sound
+          goTo loopSetColl
+        }
+        event Property #lTargetID
+        if Collarin In #property || Collar In #property
+        {
+          set %COLL #lTargetID
+          goSub inBackpackCharID %COLL
+          set #lTargetID %lTargetID
+          if #result = #FALSE
+          {
+            goTo loopSetColl
+          }
+          return
+        }
+        else
+        {
+          goSub tryAgain
+          set #lTargetID %lTargetID
+          goTo loopSetColl
+        }
+      }
+    }
+    goTo loopTargetColl
+  }
+}
+
+sub tryAgain
+{
+  sound
+  event ExMsg #lTargetID 3 1970 Intentalo de nuevo
+  return
+}
+
+sub inBackpackCharID
+{
+  set %itemBuscado %1
+  set %cont 0
+  repeat
+  {
+    findItem %itemBuscado A
+    if #findCnt = 1
+    {
+      event Property #findBagID
+      set %cont %cont + 1
+      set %itemBuscado #findBagID
+    }
+  }
+  until #findBagID = #backpackID || #findBagID = #charID || Banco , #SPC , $Newbie$ In #property || #findBagID = X
+  if #findBagID <> #backpackID && #findBagID <> #charID
+  {
+    sound
+    if %cont > 1
+    {
+      set %itemBuscado %1
+      set %cont %cont - 1
+      for %i %cont 1
+      {
+        findItem %itemBuscado A
+        if #findCnt = 1
+        {
+          event ExMsg #findBagID 3 1970 %i
+          set %itemBuscado #findBagID
+        }
+      }
+    }
+    event ExMsg #lTargetID 3 1970 Contenme en tu 'Mochila'
+    return #FALSE
+  }
+  return
+}
+
+sub setBagAmulProtecXY
+{
+  set %itemBuscado %AMULPROTEC
+  set %contBagAmulProtec 0
+  repeat
+  {
+    findItem %itemBuscado A
+    if #findCnt = 1
+    {
+      set %contBagAmulProtec %contBagAmulProtec + 1
+      if #findBagID <> #charID
+      {
+        if #findID = %AMULPROTEC
+        {
+          set %BAGAMULPROTEC #findBagID
+        }
+        set %bagAmulProtec . %contBagAmulProtec #findBagID
+      }
+      else
+      {
+        set %BAGAMULPROTEC #backpackID
+        set %bagAmulProtec . %contBagAmulProtec #backpackID
+        findItem * C_ , #backpackID
+      }
+      click #findX #findY dmc
+      set %xBagCont . %contBagAmulProtec #contPosX
+      set %yBagCont . %contBagAmulProtec #contPosY
+      set %itemBuscado #findBagID
+    }
+  }
+  until #findBagID = #backpackID || #findBagID = #charID
+  return
+}
+
+sub getBagAmulProtecXY
+{
+  set %lObjectID #lObjectID
+  for %i %contBagAmulProtec 1
+  {
+    if %i <> %contBagAmulProtec
+    {
+      nextCPos %xBagCont . %i %yBagCont . %i
+      set #lObjectID %bagAmulProtec . %i
+      event Macro 17 0
+      goSub waitBag #lObjectID
+    }
+    else
+    {
+      goSub waitBag #backpackID
+    }
+  }
+  set #lObjectID %lObjectID
+  return
+}
+
+sub waitBag
+{
+  while #contID <> %1
+  {
+    wait 1
+  }
+  return
+}
+
+sub scanDiaroTecla
+{
+  set %count_jIndex #jIndex ;Previous of journal's last line
+  while #TRUE
+  {
+    if #jIndex > %count_jIndex
+    {
+      set %count_jIndex %count_jIndex + 1
+      scanjournal %count_jIndex
+      goSub filterAmulProtec
+    }
+    goSub filterHotKey
+  }
+  return
+}
+
+sub filterAmulProtec
+{
+  if %delayAmulProtec = #FALSE
+  {
+    if #jColor = 34 && %transCharName , :_ves_a_ , %transCharName , _hechizado_por_el_amuleto = #journal
+    {
+      set %delayAmulProtec #TRUE
+      return
+    }
+    if #jColor = 0 && El_amuleto_no_ha_recuperado_la_energia_aun!. = #journal
+    {
+      set %delayAmulProtec #TRUE
+      return
+    }
+  }
+  if #jColor = 0 && El_amuleto_se_ha_recargado! = #journal
+  {
+    set %delayAmulProtec #FALSE
+    event ExMsg #charID 3 1391 [ , AMULETO 100 , % , ]
+    return
+  }
+  if #jColor = 946 && Tu_espiritu_retorna_a_su_cuerpo. = #journal
+  {
+    goSub getBagAmulProtecXY
+  }
+  return
+}
+
+sub filterHotKey
+{
+  if #charID = %charID
+  {
+    if #charGHOST = NO
+    {
+      if %delayAmulProtec = #FALSE
+      {
+                        ;TECLA [Ctrl] [Shift] [Alt]
+        onHotKey E Ctrl ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+        {
+          set %lObjectID #lObjectID
+          set #lObjectID %AMULPROTEC
+          event Macro 17 0
+          set #lObjectID %lObjectID
+          set %delayAmulProtec #TRUE
+        }
+      }
+      goSub disarmAmulProtec
+      goSub armColl
+    }
+    else
+    {
+      nextCPos %xBagCont . %contBagAmulProtec %yBagCont . %contBagAmulProtec
+    }
+  }
+  return
+}
+
+sub disarmAmulProtec
+{
+  if #charGHOST = NO
+  {
+    findItem %AMULPROTEC C_ , #charID
+    if #findCnt = 1
+    {
+      exevent Drag %AMULPROTEC
+      goSub waitDrag %AMULPROTEC
+      exevent Dropc %BAGAMULPROTEC
+      goSub waitDrop %AMULPROTEC %BAGAMULPROTEC ;wait 5
+    }
+    else
+    {
+      findItem %AMULPROTEC A
+      if #findCnt = 1 && #findBagID <> %BAGAMULPROTEC
+      {
+        exevent Drag %AMULPROTEC
+        goSub waitDrag %AMULPROTEC
+        exevent Dropc %BAGAMULPROTEC
+        goSub waitDrop %AMULPROTEC %BAGAMULPROTEC
+      }
+    }
+  }
+  return
+}
+
+sub armColl
+{
+  if #charGHOST = NO
+  {
+    findItem %COLL C_ , #charID
+    if #findCnt = 0
+    {
+      findItem %COLL A
+      if #findCnt = 1
+      {
+        exevent Drag %COLL
+        goSub waitDrag %COLL
+        exevent Droppd
+        goSub waitDrop %COLL #CHARID
+      }
+    }
+  }
+  return
+}
+
+sub waitDrag
+{
+  set %stopCrono #sysTime + 350
+  repeat
+  {
+    findItem %1 A
+    if #sysTime > %stopCrono
+    {
+      break
+    }
+  }
+  until #findCnt = 0 ;#findKind = -1 && #contKind <> YMAC
+  return
+}
+
+sub waitDrop
+{
+  set %stopCrono #sysTime + 350
+  repeat
+  {
+    findItem %1 C_ , %2
+    if #sysTime > %stopCrono
+    {
+      break
+    }
+  }
+  until #findCnt = 1 ;#findKind = 0 && #contKind = YMAC
+  return
+}

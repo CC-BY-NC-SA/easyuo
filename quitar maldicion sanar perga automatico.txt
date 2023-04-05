@@ -1,0 +1,80 @@
+;|----------------------------------------|
+;| Quitarse Maldicion de la Edad y veneno |
+;|----------------------------------------|
+
+set %delay_Spell 16 ;Spell delay in tenths of a second
+set %frizzleHechizos 0
+set #sysMsgCol 1391
+event sysmessage Quitarse 'Maldicion de la Edad' y 'Sanar' automatico -Activado-
+
+Loop:
+{
+  if Has_sido_maldecido in #sysMsg
+  {
+    Fuerza:
+    {
+      event Macro 1 0 .p16
+      target
+      event Macro 23 0
+      set %count_jIndex #jIndex ;Previous of journal's last line
+      set %lim_sysTime #sCnt2 + %delay_Spell ;Timer in tenths of seconds since Windows boot plus delay
+      while %lim_sysTime > #sCnt2
+      {
+        if #jIndex > %count_jIndex
+        {
+          set %count_jIndex %count_jIndex + 1
+          scanjournal %count_jIndex
+          if El_hechizo_falla in #journal
+          {
+            event Macro 6 0
+            set %frizzleHechizos %frizzleHechizos + 1
+            goto Fuerza
+          }
+        }
+      }
+      if %frizzleHechizos <> 0
+      {
+        if %frizzleHechizos % 2 <> 0
+        {
+          event Macro 6 0
+        }
+        set %frizzleHechizos 0
+      }
+    }
+  }
+
+  if A notIn #charStatus && ( Has_sido_envenenado in #sysMsg || C in #charStatus )
+  {
+    Sanar:
+    {
+      event Macro 1 0 .p11
+      target
+      event Macro 23 0
+      set %count_jIndex #jIndex ;Previous of journal's last line
+      set %lim_sysTime #sCnt2 + %delay_Spell ;Timer in tenths of seconds since Windows boot plus delay
+      while %lim_sysTime > #sCnt2
+      {
+        if #jIndex > %count_jIndex
+        {
+          set %count_jIndex %count_jIndex + 1
+          scanjournal %count_jIndex
+          if El_hechizo_falla in #journal
+          {
+            event Macro 6 0
+            set %frizzleHechizos %frizzleHechizos + 1
+            goto Sanar
+          }
+        }
+      }
+      if %frizzleHechizos <> 0
+      {
+        if %frizzleHechizos % 2 <> 0
+        {
+          event Macro 6 0
+        }
+        set %frizzleHechizos 0
+      }
+    }
+  }
+}
+goTo Loop

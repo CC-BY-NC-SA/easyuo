@@ -1,0 +1,1256 @@
+;|----------------------------------------------------|
+;| Descuartizador de cadaveres y/o saqueador de suelo |
+;|----------------------------------------------------|
+;* El arma con filo y/o contenedor de peso leve, 'Cajita', 'Bolsa' o 'Mochila', tienen que estar visibles
+;** Si ademas escogemos como contenedor de saqueo una 'Cajita' con 'Trampa Magica' aun mayor sera la probabilidad de evitar la sustraccion, sobre todo cuando esta accion es automatizada
+;** El uso de un contenedor diferente al de la 'Mochila' de nuestro personaje facilitara considerablemente la descarga de lo saqueado ademas de mantener la apariencia de nuestra 'Mochila' intacta
+;** La asociacion de una 'Cajita' con 'Trampa Magica' tambien evitara la factible sustraccion de una 'Runa' marcada en una zona peligrosa, con guardias por parte de un personaje asesino por ejemplo, y que nuestro destino lo decida el comun programa para 'Viajar' a traves de esta "lanzando una moneada al aire"
+;*** Para que se prioricen aquellos cadaveres de los que seamos 'el contendiente que mayor numero de heridas le ha causado' se debe tener iniciado ('Start') un 'contador_vendas [...]' actualizado
+;**** Mientras no se cierre el cliente permaneceran los datos almacenados, compatible con el cambio de personajes
+
+set %cutARMAS KPH_JPH_POH_SOH_NMH_OMH_FUO_ATF_ZSF_KTF_JTF_BPH_EPH_INF_HNF_GMH_FMH_ZRF_CSF_LSF_OSF_NSF_ISF_LPH_MPH_SMH_RMH_BSF_MSF_ASF_FSF_NPO_ZTO_GUO_HSF_KSF_YTH_XTH_UPO_TSF_WSF_CNF_BNF_WRH_VRH_OPO_SRH_RRH_PPF_AQF_BUO_CUO_XRH_YRH_MTF_LTF
+set %lootBAGS IUD_LKF_CKF_ZJF
+set %CORPSES YFM_QNF
+set %bloodCORPSES XWK
+set %lootITEMS KPH_JPH_POH_SOH_NMH_OMH_FUO_ATF_ZSF_KTF_JTF_BPH_EPH_ZRF_CSF_LSF_OSF_NSF_ISF_LPH_MPH_SMH_RMH_BSF_MSF_NPO_ZTO_GUO_HSF_KSF_YTH_XTH_UPO_WRH_VRH_OPO_SRH_RRH_PPF_AQF_BUO_CUO_XRH_YRH_MTF_LTF_VOH_QOH_CUH_BUH_XSF_YSF_AUO_JOH_UOH_URH_TRH_ZPF_CQF_PMH_QMH_GFF_FFF_WTH_VTH_AUH_ZTH_TOH_WOH_QPO_JSF_USF_MMH_LMH_PPO_GYAB_OSH_TSH_CSH_BSH_ESH_DSH_CRH_ASH_GSH_FSH_NSH_MSH_JSH_ISH_USH_HSH_KSH_MSK_LSK_LSH_WSH_NJL_QJL_JKH_HKH_UKH_PKH_RKH_KKH_SKH_QKH_DLH_VKH_ELH_ALH_YKH_FLH_XKH_LLH_ULH_ZPH_YPH_QPH_BQH_AQH_VPH_PPH_WPH_CQH_XPH_CDP_ZAP_FIK_OIK_AIK_ZHK_MIK_LIK_GIK_NIK_BIK_CIK_HJG_SJG_UJG_IJG_VVI_IWI_XVI_YVI_WVI_BWI_EWI_WWI_KWI_QSH_VSH_QZH_NZH_PZH_KZH_DZH_OZH_EZH_BZH_TDI_GZH_HWI_MKH_DPH_JWI_CZH_HZH_DCI_ODI_FWL_AWL_ZIM_AJM_EWH_TVH_QWL_PWL_SWL_RWL
+set %lootBLOCKITEMS ZTD_KKF_TMF_UMF_KWF_QEG_PEG_QWK_FWK_XVK_GWK_YVK_RWK_EWK_WEE_VEE_QEE_TEE_QMJ_YBK_XBK_UMF_TMF
+set %STICKS ZPF_CQF_PMH_QMH_GFF_FFF
+set %lTargetID #lTargetID
+
+goSub control
+goSub setArma
+goSub setBolsa
+goSub scanHotKey
+
+sub control
+{
+  if #cliLogged = 0 || #charGhost = YES
+  {
+    sound
+    display okcancel Se recomienda iniciar este programa estando conectado con el personaje vivo en cuestion para asi configurar un arma cortante con la que descuartizar cadaveres, y por lo tanto hacerlo mas rapido, ademas de un contenedor que contenga nuestra 'Mochila' para facilitar su descarga y que pase mas desapercibido , #DOT
+    if #dispRes = OK
+    {
+      set #sysMsgCol 1970
+      event SysMessage Deteniendo programa... <Parado>
+      stop
+    }
+    set %boolARMA #FALSE
+    set %boolBAG #FALSE
+  }
+  set #sysMsgCol 1391
+  event SysMessage Descuartizador de cadaveres y saqueador de suelo -Activado-
+  if #cliLogged = 1
+  {
+    findItem #backpackID C_ , #charID
+    if #findCnt = 0
+    {
+      set %xCharID #cliXRes + #cliLeft
+      set %yCharID #cliTop
+      nextCPos %xCharID %yCharID
+      event SysMessage ~ * , Abriendo la ficha de , #SPC , #charName , ...
+      event Macro 8 1
+    }
+    if #charGhost = NO
+    {
+      findItem * C_ , #backpackID
+      if #findCnt = 0
+      {
+        set %xBackpackID #cliXRes + #cliLeft
+        set %yBackpackID #cliYRes + #cliTop
+        nextCPos %xBackpackID %yBackpackID
+        event SysMessage ~ * , Abriendo la 'Mochila' de , #SPC , #charName , ...
+        wait 10
+        event Macro 8 7
+      }
+    }
+  }
+  return
+}
+
+sub setArma
+{
+  if %boolARMA <> #FALSE
+  {
+    loopSetArma:
+    {
+      set #sysMsgCol 1391
+      event SysMessage ~1.- Selecciona el arma cortante que contiene el primer nivel de tu 'Mochila' o ficha.
+      set #targCurs 1
+      target
+      set #lTargetKind 1
+      loopTargetArma:
+      {
+        if #targCurs = 0
+        {
+          onHotKey ESC
+          {
+            sound
+            display okcancel Se recomienda configurar un arma cortante con la que descuartizar cadaveres para asi hacerlo mas rapido , #DOT
+            if #dispRes = OK
+            {
+              goTo loopSetArma
+            }
+            return
+          }
+          findItem #lTargetID A
+          if #findCnt = 1
+          {
+            if #findType in %cutARMAS
+            {
+              set %cutARMA #lTargetID
+              goSub inBackpackCharID %cutARMA
+              set #lTargetID %lTargetID
+              if #result = #FALSE
+              {
+                goTo loopSetArma
+              }
+              return
+            }
+            else
+            {
+              goSub tryAgain
+              set #lTargetID %lTargetID
+              goTo loopSetArma
+            }
+          }
+        }
+        goTo loopTargetArma
+      }
+    }
+  }
+  return
+}
+
+sub setBolsa
+{
+  if %boolBAG <> #FALSE
+  {
+    loopSetBolsa:
+    {
+      set #sysMsgCol 1391
+      event SysMessage ~2.- Selecciona el contenedor que contiene el primer nivel de tu 'Mochila'.
+      set #targCurs 1
+      target
+      set #lTargetKind 1
+      loopTargetBolsa:
+      {
+        if #targCurs = 0
+        {
+          onHotKey ESC
+          {
+            sound
+            display okcancel Se recomienda configurar un contenedor para facilitar su descarga y pase mas desapercibido, lo ideal seria una 'Cajita' con 'Trampa Magica' , #DOT
+            if #dispRes = OK
+            {
+              goTo loopSetBolsa
+            }
+            return
+          }
+          findItem #lTargetID A
+          if #findCnt = 1
+          {
+            if #findType in %lootBAGS
+            {
+              set %lootBAG #lTargetID
+              goSub inBackpackCharID %lootBAG
+              set #lTargetID %lTargetID
+              if #result = #FALSE
+              {
+                goTo loopSetBolsa
+              }
+              return
+            }
+            else
+            {
+              goSub tryAgain
+              set #lTargetID %lTargetID
+              goTo loopSetBolsa
+            }
+          }
+        }
+        goTo loopTargetBolsa
+      }
+    }
+  }
+  return
+}
+
+sub tryAgain
+{
+  sound
+  event ExMsg #lTargetID 3 1970 Intentalo de nuevo
+  return
+}
+
+sub inBackpackCharID
+{
+  set %itemBuscado %1
+  set %cont 0
+  repeat
+  {
+    findItem %itemBuscado A
+    if #findCnt = 1
+    {
+      event Property #findBagID
+      set %cont %cont + 1
+      set %itemBuscado #findBagID
+    }
+  }
+  until #findBagID = #backpackID || #findBagID = #charID || Banco , #SPC , $Newbie$ In #property || #findBagID = X
+  if %cont > 1
+  {
+    set %itemBuscado %1
+    set %cont %cont - 1
+    for %i %cont 1
+    {
+      findItem %itemBuscado A
+      if #findCnt = 1
+      {
+        event ExMsg #findBagID 3 1970 %i
+        set %itemBuscado #findBagID
+      }
+    }
+    event ExMsg #lTargetID 3 1970 Contenme en el nivel 1 de tu 'Mochila'
+    return #FALSE
+  }
+  else
+  {
+    if #findBagID <> #backpackID && #findBagID <> #charID
+    {
+      event ExMsg #lTargetID 3 1970 Contenme en tu 'Mochila'
+      return #FALSE
+    }
+  }
+  return
+}
+
+sub scanHotKey
+{
+  Loop:
+  {
+  ;Descuartizar un cadaver y coger lo que este en el suelo en un radio de 2 casillas, tendran prioridad aquellos de los que seamos 'el contendiente que mayor numero de heridas le ha causado' durante al menos un minuto si es que en el transcurso no los hemos inspeccionado mediante este programa
+                         ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey DELETE      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub cutCadaverBotin
+      goSub lootSuelo %lootITEMS
+    }
+  ;Coger lo que haya en un cadaver (no recomendable por la Virtud Sacrificio), tendran prioridad aquellos de los que seamos 'el contendiente que mayor numero de heridas le ha causado' durante al menos un minuto si es que en el transcurso no los hemos inspeccionado a traves de este programa
+                    ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey DELETE Ctrl      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub lootCadaverBotin %lootITEMS
+    }
+  ;Coger lo que haya en el suelo en un radio de 2 casillas
+                    ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey END      ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub lootSuelo %lootITEMS
+    }
+  ;Descuartizar un cadaver en un radio de 2 casillas, tendran prioridad aquellos de los que seamos 'el contendiente que mayor numero de heridas le ha causado' durante al menos un minuto si es que en el transcurso no los hemos inspeccionado con este programa
+                       ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey HOME    ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub cutCadaverBotin
+    }
+  ;Coger los objetos obstaculizantes que impidan el paso, hasta una distancia de 2 casillas (no estan todos)
+  ;Si el personaje mira en el sentido de alguno de los puntos cardinales (norte, este, sur u oeste) recogera todos los objetos obstaculizantes mas usados hasta a 2 casillas de distancia en la misma orientacion
+  ;Por ejemplo, si el personaje esta orientado hacia el norte tendra la posibilidad de recoger todos los objetos obstaculizantes mas usados que haya en las 2 posiciones mas cercanas de en frente
+  ;Si el personaje mira hacia el noreste, sureste, suroeste o noroeste recogera todos los objetos obstaculizantes mas usados hasta a 1 casilla de distancia y 2 en las correspondientes orientaciones de los 2 puntos cardinales al que haria referencia
+  ;Por ejemplo, si el personaje esta orientado hacia el noreste tendra la posibilidad de recoger todos los objetos obstaculizantes mas usados que haya en la posicion mas cercana de en frente y hasta 2 casillas de distancia en sentido norte y este.
+  ;La metodologia que se sigue es la mas sensata y optimizada
+                    ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey DELETE Shift ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub lootDirObstruida %lootBLOCKITEMS
+    }
+  ;Coger los objetos obstaculizantes que haya en el suelo en un radio de 2 casillas, excepto los que haya en la posicion del personaje (no estan todos)
+                    ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey DELETE Alt ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub lootSueloObstruido %lootBLOCKITEMS
+    }
+  }
+  goTo Loop
+  return
+}
+
+sub cutCadaverBotin
+{
+  goSub getBloqueador
+  set %lObjectID #lObjectID
+  findItem %cutARMA C
+  if #findCnt = 1
+  {
+    set #lObjectID %cutARMA
+    event Macro 17 0
+    if #findBagID <> #charID
+    {
+      event Macro 17 0
+    }
+  }
+  else
+  {
+    findItem %cutARMAS C
+    if #findCnt <> 0
+    {
+      set #lObjectID #findID
+      event Macro 17 0
+      if #findBagID <> #charID
+      {
+        event Macro 17 0
+      }
+    }
+    else
+    {
+      findItem %cutARMAS G_3
+      if #findCnt <> 0
+      {
+        set %minCharPosZ #charPosZ - 34
+        set %maxCharPosZ #charPosZ + 34
+        for #findIndex 1 #findCnt
+        {
+          if #findZ > %minCharPosZ && #findZ < %maxCharPosZ
+          {
+            set #lObjectID #findID
+            event Macro 17 0
+            event Macro 17 0
+          }
+        }
+      }
+      else
+      {
+        findItem %cutARMAS G
+        if #findCnt <> 0
+        {
+          set %minCharPosZ #charPosZ - 20
+          set %maxCharPosZ #charPosZ + 20
+          for #findIndex 1 #findCnt
+          {
+            if #findZ > %minCharPosZ && #findZ < %maxCharPosZ
+            {
+              event ExMsg #findID 3 1391 [ , Arma cortante , #SPC , # , #findIndex , ]
+            }
+            else
+            {
+              if #findZ >= %maxCharPosZ
+              {
+                event ExMsg #findID 3 1970 ^ , #SPC , [ , Arma cortante , #SPC , # , #findIndex , ] , #SPC , ^
+              }
+              else
+              {
+                event ExMsg #findID 3 1970 v , #SPC , [ , Arma cortante , #SPC , # , #findIndex , ] , #SPC , v
+              }
+            }
+          }
+        }
+        else
+        {
+          event ExMsg #charID 3 1970 [ , ARMA FILO , ]
+        }
+        return
+      }
+    }
+  }
+  findItem %CORPSES G_3
+  if #findCnt <> 0
+  {
+    set %minCharPosZ #charPosZ - 34
+    set %maxCharPosZ #charPosZ + 34
+    set %corpse N/A
+    str Len *charBotin
+    set %charBotinLen #strRes
+    for #findIndex 1 #findCnt
+    {
+      if #findZ > %minCharPosZ && #findZ < %maxCharPosZ
+      {
+        if %charBotinLen <> 0
+        {
+          event Property #findID
+          goSub getPropertyCharName
+          str Pos *charBotin #result
+          if #strRes <> 0 || #findIndex = #findCnt
+          {
+            set %corpse #findID
+            break
+          }
+        }
+        else
+        {
+          set %corpse #findID
+          break
+        }
+      }
+    }
+    if %corpse <> N/A
+    {
+      set %lTargetID #lTargetID
+      set #lTargetID %corpse
+      set #lTargetKind 1
+      target
+      event Macro 22 0
+      set #lTargetID %lTargetID
+      if #strRes <> 0
+      {
+        goSub waitSangre Botin
+      }
+      else
+      {
+        goSub waitSangre
+      }
+    }
+    else
+    {
+      goSub getCadaveres
+    }
+  }
+  else
+  {
+    goSub getCadaveres
+  }
+  goSub setBloqueador
+  set #lObjectID %lObjectID
+  return
+}
+
+sub getPropertyCharName
+{
+  str Del #property 1 11
+  set %property #strRes
+  str Len %property
+  set %delLen #strRes
+  if #findType = YFM
+  {
+    str Pos %property #DOT
+  }
+  else
+  {
+    str Pos %property #SPC
+  }
+  set %delLen %delLen - #strRes + 1
+  str Del %property #strRes %delLen
+  return #strRes
+}
+
+sub waitSangre
+{
+  if %0 = 1
+  {
+    if #result = *charBotin
+    {
+      set *charBotin
+    }
+    else
+    {
+      set %delStart #strRes
+      str Len #result
+      set %charLen #strRes
+      set %charEndPos ( %delStart + %charLen ) - 1
+      if %charEndPos <> %charBotinLen
+      {
+        set %charSMCLen %charLen + 1
+        str Del *charBotin %delStart %charSMCLen
+      }
+      else
+      {
+        set %delStart %delStart - 1
+        set %charLen %charLen + 1
+        str Del *charBotin %delStart %charLen
+      }
+      set *charBotin #strRes
+    }
+  }
+  set %playCrono #sCnt2
+  repeat
+  {
+    findItem %bloodCORPSES G_3
+    set %stopCrono #sCnt2 - %playCrono
+    if %stopCrono > 2
+    {
+      break
+    }
+  }
+  until #findCnt > 0
+  return
+}
+
+sub getCadaveres
+{
+  findItem %CORPSES G
+  if #findCnt <> 0
+  {
+    set %minCharPosZ #charPosZ - 20
+    set %maxCharPosZ #charPosZ + 20
+    for #findIndex 1 #findCnt
+    {
+      if #findZ > %minCharPosZ && #findZ < %maxCharPosZ
+      {
+        event ExMsg #findID 3 1391 [ , Cadaver , #SPC , # , #findIndex , ]
+      }
+      else
+      {
+        if #findZ >= %maxCharPosZ
+        {
+          event ExMsg #findID 3 1970 ^ , #SPC , [ , Cadaver , #SPC , # , #findIndex , ] , #SPC , ^
+        }
+        else
+        {
+          event ExMsg #findID 3 1970 v , #SPC , [ , Cadaver , #SPC , # , #findIndex , ] , #SPC , v
+        }
+      }
+    }
+  }
+  else
+  {
+    event ExMsg #charID 3 1970 [ , CUERPO , ]
+  }
+  return
+}
+
+sub getBloqueador
+{
+  chooseSkill Parr Real
+  if #skill > 799
+  {
+    findItem %STICKS C_ , #charID
+    if #findCnt = 1
+    {
+      set %STICK #findID
+    }
+    else
+    {
+      set %STICK N/A
+    }
+  }
+  return
+}
+
+sub setBloqueador
+{
+  if %STICK <> N/A
+  {
+    set #lObjectID %STICK
+    event Macro 17 0
+  }
+  return
+}
+
+sub lootSuelo
+{
+  goSub ctrlBolsa
+  set %farLoot 0
+  findItem %1 G_2
+  if #findCnt > 0
+  {
+    set %minCharPosZ #charPosZ - 23
+    set %maxCharPosZ #charPosZ + 23
+    set %findIndex 0
+    for #findIndex 1 #findCnt
+    {
+      if #findZ > %minCharPosZ && #findZ < %maxCharPosZ
+      {
+        event Drag #findID
+        goSub waitDrag
+        click %xLootBAG %yLootBAG p
+        goSub waitDrop
+        set %findIndex %findIndex + 1
+        event ExMsg %lootBAG 3 1391 [ , %findIndex , / , #findCnt , ]
+      }
+      else
+      {
+        set %farLoot %farLoot + 1
+      }
+    }
+  }
+  if #findCnt = %farLoot
+  {
+    sound
+    event ExMsg %lootBAG 3 1970 [ , 0 , / , 0 , ]
+  }
+  return
+}
+
+sub ctrlBolsa
+{
+  findItem %lootBAG C_ , #backpackID
+  if #findCnt = 1
+  {
+    set %xLootBAG #findX + 22
+    set %yLootBAG #findY + 7
+  }
+  else
+  {
+    findItem #backpackID C_ , #charID
+    if #findCnt = 0
+    {
+      event SysMessage ~ * , Abriendo la ficha de , #SPC , #charName , ...
+      set %xCharID #cliXRes + #cliLeft
+      set %yCharID #cliTop
+      event Macro 8 1
+      goSub waitCont #charID
+      set #contPosX %xCharID
+      set #contPosY %yCharID
+      findItem #backpackID C_ , #charID
+    }
+    set %lootBAG #backpackID
+    set %xLootBAG #findX + 145
+    set %yLootBAG #findY + 220
+  }
+  return
+}
+
+sub lootCadaverBotin
+{
+  findItem %CORPSES G_2
+  if #findCnt <> 0
+  {
+    set %minCharPosZ #charPosZ - 23
+    set %maxCharPosZ #charPosZ + 23
+    str Len *charBotin
+    set %charBotinLen #strRes
+    set %corpse N/A
+    set %items %1
+    for #findIndex 1 #findCnt
+    {
+      if #findZ > %minCharPosZ && #findZ < %maxCharPosZ
+      {
+        if %charBotinLen <> 0
+        {
+          event Property #findID
+          goSub getPropertyCharName
+          str Pos *charBotin #result
+          if #strRes <> 0 || #findIndex = #findCnt
+          {
+            set %corpse #findID
+            break
+          }
+        }
+        else
+        {
+          set %corpse #findID
+          break
+        }
+      }
+    }
+    if %corpse <> N/A
+    {
+      set %lObjectID #lObjectID
+      set #lObjectID %corpse
+      event Macro 17 0
+      set #lObjectID %lObjectID
+      goSub waitCont %corpse Botin
+      goSub ctrlBolsa
+      findItem %items C_ , %corpse
+      if #findCnt > 0
+      {
+        for #findIndex 1 #findCnt
+        {
+          event Drag #findID
+          goSub waitDrag
+          click %xLootBAG %yLootBAG p
+          goSub waitDrop
+          event ExMsg %lootBAG 3 1391 [ , #findIndex , / , #findCnt , ]
+        }
+      }
+    }
+    else
+    {
+      goSub getCadaveres
+    }
+  }
+  else
+  {
+    goSub getCadaveres
+  }
+  return
+}
+
+sub waitDrag
+{
+  set %stopCrono #sCnt2 + 2
+  repeat
+  {
+    if #sCnt2 > %stopCrono
+    {
+      break
+    }
+  }
+  until #contKind = YMAC
+  wait 1
+  return
+}
+
+sub waitDrop
+{
+  set %stopCrono #sCnt2 + 2
+  repeat
+  {
+    if #sCnt2 > %stopCrono
+    {
+      break
+    }
+  }
+  until #contKind <> YMAC
+  wait 2
+  return
+}
+
+sub waitCont
+{
+  if %0 = 2
+  {
+    if #result = *charBotin
+    {
+      set *charBotin
+    }
+    else
+    {
+      set %delStart #strRes
+      str Len #result
+      set %charLen #strRes
+      set %charEndPos ( %delStart + %charLen ) - 1
+      if %charEndPos <> %charBotinLen
+      {
+        set %charSMCLen %charLen + 1
+        str Del *charBotin %delStart %charSMCLen
+      }
+      else
+      {
+        set %delStart %delStart - 1
+        set %charLen %charLen + 1
+        str Del *charBotin %delStart %charLen
+      }
+      set *charBotin #strRes
+    }
+  }
+  set %stopCrono #sCnt + 3
+  while #contID <> %1
+  {
+    if #sCnt > %stopCrono
+    {
+      break
+    }
+  }
+  return
+}
+
+sub lootDirObstruida
+{
+  set %charDir #charDir
+  goSub ctrlBolsa
+  findItem %1 G_2
+  if #findCnt > 0
+  {
+    if %charDir = 0 || %charDir = 4 || %charDir = 1 || %charDir = 3 || %charDir = 5 || %charDir = 7
+    {
+      if %charDir <> 3 && %charDir <> 7
+      {
+        set %xItemsDist1Dir1 #charPosX
+        set %xItemsDist2Dir1 #charPosX
+      }
+      else
+      {
+        set %xItemsDist1Dir2 #charPosX
+        set %xItemsDist2Dir2 #charPosX
+      }
+    }
+    if %charDir = 2 || %charDir = 6 || %charDir = 1 || %charDir = 3 || %charDir = 5 || %charDir = 7
+    {
+      if %charDir <> 1 && %charDir <> 5
+      {
+        set %yItemsDist1Dir1 #charPosY
+        set %yItemsDist2Dir1 #charPosY
+      }
+      else
+      {
+        set %yItemsDist1Dir2 #charPosY
+        set %yItemsDist2Dir2 #charPosY
+      }
+    }
+    if %charDir = 0 || %charDir = 1 || %charDir = 7
+    {
+      if %charDir <> 7
+      {
+        set %yItemsDist1Dir1 #charPosY - 1
+        set %yItemsDist2Dir1 #charPosY - 2
+      }
+      else
+      {
+        set %yItemsDist1Dir2 #charPosY - 1
+        set %yItemsDist2Dir2 #charPosY - 2
+      }
+      if %charDir <> 0
+      {
+        set %yItemsDist1Dir3 #charPosY - 1
+      }
+    }
+    if  %charDir = 2 || %charDir = 1 || %charDir = 3
+    {
+      if %charDir <> 1
+      {
+        set %xItemsDist1Dir1 #charPosX + 1
+        set %xItemsDist2Dir1 #charPosX + 2
+      }
+      else
+      {
+        set %xItemsDist1Dir2 #charPosX + 1
+        set %xItemsDist2Dir2 #charPosX + 2
+      }
+      if %charDir <> 2
+      {
+        set %xItemsDist1Dir3 #charPosX + 1
+      }
+    }
+    if %charDir = 4 || %charDir = 3 || %charDir = 5
+    {
+      if %charDir <> 3
+      {
+        set %yItemsDist1Dir1 #charPosY + 1
+        set %yItemsDist2Dir1 #charPosY + 2
+        if %charDir = 5
+        {
+          set %yItemsDist1Dir3 #charPosY + 1
+        }
+      }
+      else
+      {
+        set %yItemsDist1Dir2 #charPosY + 1
+        set %yItemsDist2Dir2 #charPosY + 2
+        set %yItemsDist1Dir3 #charPosY + 1
+      }
+    }
+    if %charDir = 6 || %charDir = 5 || %charDir = 7
+    {
+      if %charDir <> 5
+      {
+        set %xItemsDist1Dir1 #charPosX - 1
+        set %xItemsDist2Dir1 #charPosX - 2
+        if %charDir = 7
+        {
+          set %xItemsDist1Dir3 #charPosX - 1
+        }
+      }
+      else
+      {
+        set %xItemsDist1Dir2 #charPosX - 1
+        set %xItemsDist2Dir2 #charPosX - 2
+        set %xItemsDist1Dir3 #charPosX - 1
+      }
+    }
+    set %findCntDist1Dir1 0
+    set %findCntDist2Dir1 0
+    if ( %charDir % 2 <> 0 )
+    {
+      set %findCntDist1Dir2 0
+      set %findCntDist2Dir2 0
+      set %findCntDist1Dir3 0
+    }
+    set %minCharPosZ #charPosZ - 23
+    set %maxCharPosZ #charPosZ + 23
+    for #findIndex 1 #findCnt
+    {
+      if #findZ > %minCharPosZ && #findZ < %maxCharPosZ
+      {
+        if #findX = %xItemsDist1Dir1 && #findY = %yItemsDist1Dir1
+        {
+          if %findCntDist1Dir1 = 0
+          {
+            event ExMsg #findID 0 1970 #DOT
+          }
+          set %findCntDist1Dir1 %findCntDist1Dir1 + 1
+          set %findIdDist1Dir1_ . %findCntDist1Dir1 #findID
+        }
+        else
+        {
+          if #findX = %xItemsDist2Dir1 && #findY = %yItemsDist2Dir1
+          {
+            if %findCntDist2Dir1 = 0
+            {
+              event ExMsg #findID 0 1970 #DOT
+            }
+            set %findCntDist2Dir1 %findCntDist2Dir1 + 1
+            set %findIdDist2Dir1_ . %findCntDist2Dir1 #findID
+          }
+          else
+          {
+            if ( %charDir % 2 <> 0 )
+            {
+              if #findX = %xItemsDist1Dir2 && #findY = %yItemsDist1Dir2
+              {
+                if %findCntDist1Dir2 = 0
+                {
+                  event ExMsg #findID 0 1970 #DOT
+                }
+                set %findCntDist1Dir2 %findCntDist1Dir2 + 1
+                set %findIdDist1Dir2_ . %findCntDist1Dir2 #findID
+              }
+              else
+              {
+                if #findX = %xItemsDist2Dir2 && #findY = %yItemsDist2Dir2
+                {
+                  if %findCntDist2Dir2 = 0
+                  {
+                    event ExMsg #findID 0 1970 #DOT
+                  }
+                  set %findCntDist2Dir2 %findCntDist2Dir2 + 1
+                  set %findIdDist2Dir2_ . %findCntDist2Dir2 #findID
+                }
+                else
+                {
+                  if #findX = %xItemsDist1Dir3 && #findY = %yItemsDist1Dir3
+                  {
+                    if %findCntDist1Dir3 = 0
+                    {
+                      event ExMsg #findID 0 1970 #DOT
+                    }
+                    set %findCntDist1Dir3 %findCntDist1Dir3 + 1
+                    set %findIdDist1Dir3_ . %findCntDist1Dir3 #findID
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    set %findCntDistDir %findCntDist1Dir1 + %findCntDist2Dir1
+    if ( %charDir % 2 <> 0 )
+    {
+      set %findCntDistDir %findCntDistDir + %findCntDist1Dir2 + %findCntDist2Dir2 + %findCntDist1Dir3
+    }
+    if %findCntDistDir > 0
+    {
+      set %indexAscDist1Dir1 0
+      set %indexAscDist12Dir1 0
+      set %indexAscDist12Dir1Dist1Dir2 0
+      set %indexAscDist12Dir12 0
+      set %indexAscDist12Dir12Dist1Dir3 0
+      if %findCntDist1Dir1 > 0
+      {
+        for %indexDescDist1Dir1 %findCntDist1Dir1 1
+        {
+          if %indexDescDist1Dir1 = 1
+          {
+            event ExMsg %findIdDist1Dir1_ . %indexDescDist1Dir1 0 1391 #DOT
+          }
+          event Drag %findIdDist1Dir1_ . %indexDescDist1Dir1
+          goSub waitDrag
+          click %xLootBAG %yLootBAG p
+          goSub waitDrop
+          set %indexAscDist1Dir1 %findCntDist1Dir1 - %indexDescDist1Dir1 + 1
+          event ExMsg %lootBAG 3 1391 [ , %indexAscDist1Dir1 , / , %findCntDistDir , ]
+        }
+      }
+      if %findCntDist2Dir1 > 0
+      {
+        for %indexDescDist2Dir1 %findCntDist2Dir1 1
+        {
+          if %indexDescDist2Dir1 = 1
+          {
+            event ExMsg %findIdDist2Dir1_ . %indexDescDist2Dir1 0 1391 #DOT
+          }
+          event Drag %findIdDist2Dir1_ . %indexDescDist2Dir1
+          goSub waitDrag
+          click %xLootBAG %yLootBAG p
+          goSub waitDrop
+          set %indexAscDist12Dir1 %indexAscDist1Dir1 + ( %findCntDist2Dir1 - %indexDescDist2Dir1 + 1 )
+          event ExMsg %lootBAG 3 1391 [ , %indexAscDist12Dir1 , / , %findCntDistDir , ]
+        }
+      }
+      if ( %charDir % 2 <> 0 )
+      {
+        if %findCntDist1Dir2 > 0
+        {
+          for %indexDescDist1Dir2 %findCntDist1Dir2 1
+          {
+            if %indexDescDist1Dir2 = 1
+            {
+              event ExMsg %findIdDist1Dir2_ . %indexDescDist1Dir2 0 1391 #DOT
+            }
+            event Drag %findIdDist1Dir2_ . %indexDescDist1Dir2
+            goSub waitDrag
+            click %xLootBAG %yLootBAG p
+            goSub waitDrop
+            set %indexAscDist12Dir1Dist1Dir2 %indexAscDist12Dir1 + ( %findCntDist1Dir2 - %indexDescDist1Dir2 + 1 )
+            event ExMsg %lootBAG 3 1391 [ , %indexAscDist12Dir1Dist1Dir2 , / , %findCntDistDir , ]
+          }
+        }
+        if %findCntDist2Dir2 > 0
+        {
+          for %indexDescDist2Dir2 %findCntDist2Dir2 1
+          {
+            if %indexDescDist2Dir2 = 1
+            {
+              event ExMsg %findIdDist2Dir2_ . %indexDescDist2Dir2 0 1391 #DOT
+            }
+            event Drag %findIdDist2Dir2_ . %indexDescDist2Dir2
+            goSub waitDrag
+            click %xLootBAG %yLootBAG p
+            goSub waitDrop
+            set %indexAscDist12Dir12 %indexAscDist12Dir1Dist1Dir2 + ( %findCntDist2Dir2 - %indexDescDist2Dir2 + 1 )
+            event ExMsg %lootBAG 3 1391 [ , %indexAscDist12Dir12 , / , %findCntDistDir , ]
+          }
+        }
+        if %findCntDist1Dir3 > 0
+        {
+          for %indexDescDist1Dir3 %findCntDist1Dir3 1
+          {
+            if %indexDescDist1Dir3 = 1
+            {
+              event ExMsg %findIdDist1Dir3_ . %indexDescDist1Dir3 0 1391 #DOT
+            }
+            event Drag %findIdDist1Dir3_ . %indexDescDist1Dir3
+            goSub waitDrag
+            click %xLootBAG %yLootBAG p
+            goSub waitDrop
+            set %indexAscDist12Dir12Dist1Dir3 %indexAscDist12Dir12 + ( %findCntDist1Dir3 - %indexDescDist1Dir3 + 1 )
+            event ExMsg %lootBAG 3 1391 [ , %indexAscDist12Dir12Dist1Dir3 , / , %findCntDistDir , ]
+          }
+        }
+      }
+    }
+  }
+  if %findCntDistDir = 0 || #findCnt = 0
+  {
+    sound
+    event ExMsg %lootBAG 3 1970 [ , 0 , / , 0 , ]
+  }
+  return
+}
+
+sub lootSueloObstruido
+{
+  goSub ctrlBolsa
+  set %farLoot 0
+  findItem %1 G_0
+  set %findDscnt #findCnt
+  findItem %1 G_2
+  set %findCnt #findCnt - %findDscnt
+  if #findCnt > 0
+  {
+    set %findIndex 0
+  }
+    findItem %1 G_1
+    if #findCnt > 0
+    {
+      set %minCharPosZ #charPosZ - 23
+      set %maxCharPosZ #charPosZ + 23
+      for #findIndex 1 #findCnt
+      {
+        if #findZ > %minCharPosZ && #findZ < %maxCharPosZ
+        {
+          if #findDist <> 0
+          {
+            event ExMsg #findID 0 1970 #DOT
+            event Drag #findID
+            goSub waitDrag
+            click %xLootBAG %yLootBAG p
+            goSub waitDrop
+            set %findIndex %findIndex + 1
+            event ExMsg %lootBAG 3 1391 [ , %findIndex , / , %findCnt , ]
+          }
+        }
+        else
+        {
+          set %farLoot %farLoot + 1
+        }
+      }
+    }
+    findItem %1 G_2
+    if #findCnt > 0
+    {
+      set %minCharPosZ #charPosZ - 23
+      set %maxCharPosZ #charPosZ + 23
+      for #findIndex 1 #findCnt
+      {
+        if #findZ > %minCharPosZ && #findZ < %maxCharPosZ
+        {
+          if #findDist <> 0
+          {
+            event ExMsg #findID 0 1970 #DOT
+            event Drag #findID
+            goSub waitDrag
+            click %xLootBAG %yLootBAG p
+            goSub waitDrop
+            set %findIndex %findIndex + 1
+            event ExMsg %lootBAG 3 1391 [ , %findIndex , / , %findCnt , ]
+          }
+        }
+        else
+        {
+          set %farLoot %farLoot + 1
+        }
+      }
+    }
+  }
+  if %findCnt = %farLoot
+  {
+    sound
+    event ExMsg %lootBAG 3 1970 [ , 0 , / , 0 , ]
+  }
+  return
+}
+
+;                 -Documentacion-
+;
+;                                 #LOBJECTTYPE
+; > Armas
+;   - Espadachin
+;      Sable                      KPH_JPH
+;      Cimitarra                  POH_SOH
+;      Katana                     NMH_OMH
+;      Recolector de Huesos       FUO
+;      Espada Ancha               ATF_ZSF
+;      Espada Larga               KTF_JTF
+;      Espada Vikinga             BPH_EPH
+;      Cuchillo de Carnicero      INF_HNF
+;      Cuchillo de Carnicero (*)  GMH_FMH
+;      Hacha de Ejecución         ZRF_CSF
+;      Hacha Grande               LSF_OSF
+;      Hacha Doble                NSF_ISF
+;      Hacha de Dos Manos         LPH_MPH
+;      Gran hacha de Batalla      SMH_RMH
+;      Hacha de Batalla           BSF_MSF
+;      Hoja Creciente             NPO
+;      Bastón con Cuchilla        ZTO
+;      Hoz                        GUO
+;      Alabarda                   HSF_KSF
+;      Alabarda Pesada            YTH_XTH
+;      Espada Paladin             UPO
+;   - Esgrima
+;      Daga                       TSF_WSF
+;      Cuchillo                   CNF_BNF
+;      Kryss                      WRH_VRH
+;      Lanza (*)                  OPO
+;      Horca de Guerra            SRH_RRH
+;      Tridente                   PPF_AQF
+;      Bastón con Doble Cuchilla  BUO
+;      Pica                       CUO
+;      Lanza Corta                XRH_YRH
+;      Lanza                      MTF_LTF
+;   - Lucha con Maza
+;      Porra                      VOH_QOH
+;      Maza Larga                 CUH_BUH
+;      Maza                       XSF_YSF
+;      Cetro                      AUO
+;      Hacha de Guerra            JOH_UOH
+;      Maza de Guerra             URH_TRH
+;      Bastón                     ZPF_CQF
+;      Bastón Nudoso              PMH_QMH
+;      Bastón Negro               GFF_FFF
+;      Martillo Pesado            WTH_VTH
+;      Martillo de Guerra         AUH_ZTH
+;   - Tiro con Arco
+;      Arco                       TOH_WOH
+;      Arco Compuesto             QPO
+;      Ballesta                   JSF_USF
+;      Ballesta Pesada            MMH_LMH
+;      Ballesta de Repetición     PPO
+;      Ballesta Pesada de Repetición (?)
+;      Arco Gigante (*)           GYAB
+;   - Talar
+;      Hacha Magica               ASF_FSF
+;
+; > Armaduras
+;   - Placas
+;      Cascos                     OSH_TSH_CSH_BSH_ESH_DSH_CRH_ASH_GSH_FSH
+;      Collarin                   NSH
+;      Brazaletes                 MSH_JSH
+;      Guantes                    ISH_USH
+;      Corazas                    HSH_KSH_MSK_LSK
+;      Grebas                     LSH_WSH
+;   - Pieles
+;      Casco                      NJL_QJL
+;      Collarin                   JKH
+;      Brazales                   HKH_UKH_PKH_RKH
+;      Guantes                    KKH_SKH
+;      Peto                       QKH_DLH
+;      Grebas                     VKH_ELH
+;   - Pieles (*)
+;      ?Casco
+;      Collarin                   ALH
+;      *Brazales                  YKH_?
+;      Guantes                    FLH_XKH
+;      Peto                      LLH_ULH
+;      *Grebas
+;   - Huesos
+;      Casco                      ZPH_YPH
+;      Brazales                   QPH_BQH
+;      Guantes                    AQH_VPH
+;      Pecho                      PPH_WPH
+;      Grebas                     CQH_XPH
+;   - Cinturon
+;      Heroe nordico              CDP_ZAP
+;   - Escudos
+;      Buckler                    FIK
+;      Madera                     OIK
+;      Kite                       AIK_ZHK
+;      Kite (*)                   MIK_LIK
+;      Bronce                     GIK
+;      Metal                      NIK
+;      Heater                     BIK_CIK
+;
+; > Vestimenta magica
+;   - Joyas
+;      Pendientes                 HJG
+;      Collar                     SJG
+;      Anillo                     UJG
+;      Brazalete                  IJG
+;   - Ropa
+;      Sombrero                   VVI
+;      Sombrero de Mago           IWI
+;      Sombrero de Paja           XVI
+;      Sombrero de Paja Alto      YVI
+;      Sombrero de Ala Ancha      WVI
+;      Sombrero flexible          BWI
+;      Sombrero de Bufon          EWI_WWI
+;      Sombrero con pluma         KWI
+;      Mascara de Orco            QSH_VSH
+;      Mascara de Tribu           QZH_NZH
+;      Mascara de Tribu Roja      PZH_KZH
+;      Mascara de Ciervo          DZH_OZH
+;      Mascara de Oso             EZH_BZH
+;      Bandana                    TDI_GZH
+;      Bonnet                     HWI
+;      Cota                       MKH_DPH
+;      Tricornio                  JWI
+;      Pañuelo de Pirata          CZH_HZH
+;      Capas                      DCI_ODI
+;      Tunicas                    FWL_AWL
+;
+; > Objetos
+;   - Encogidos
+;      Golem                      ZIM
+;      Dragon                     AJM
+;   - Magicos
+;      Pergamino de Poder         EWH_TVH
+;      Runa                       QWL_PWL_SWL_RWL
+;   - Obstaculizadores
+;      Caja Diminuta              ZTD_KKF
+;      Caja Grande                TMF_UMF
+;      Heno                       KWF_QEG_PEG
+;      Torso                      QWK
+;      Trozo de Piernas           FWK_XVK
+;      Trozo de Cuerpo            GWK_YVK
+;      Trozos del Cuerpo          RWK_EWK
+;      Pilon de Agua              WEE_VEE_QEE_TEE
+;      Barril de pociones         QMJ_YBK_XBK
+;      Caja Grande                UMF_TMF
+;      *Baules                    JIF_KIF_HKF_*
+;      *Armarios
+;      *Mesas
+;      Candelabros                UIE_NYD
+;      Vasijas                    CFE_REE_PEE
+;      Plantas                    EXE_UWE
+;      Calabaza                   NVAB
+;      Forja                      JBG
+;      Yunque                     ZAG_KBG
+;      Calabazas                  NVAB_AWAB_OVAB_RVAB
+;      Columna de Calaberas       OZM
+;      Maceta                     ANL
+;      Silla de Lealtad           JWF_UWF
+;      Nido de Araña              XHG_SHG_RHG_VHG_YHG
+;      Espantapajaros             AOL_ZNL
+;      Piel estirada              MDG_JDG_LDG_NDG_QDG_PDG_KDG
+;      Dummy de Entrenamiento     WDG_VDG_YDG_XDG_SDG_RDG_UDG_TDG
+;      Dummy para practicar Robo  SNL_RNL_UOL_TOL_WOL_VOL_QOL_POL

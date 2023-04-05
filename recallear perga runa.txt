@@ -1,0 +1,71 @@
+;|--------------------------------------|
+;| 'Viajar' con pergamino mediante runa |
+;|--------------------------------------|
+
+set #sysMsgCol 1391
+event SysMessage 'Viajar' con 'Pergamino' mediante 'Runa' automatico -Activado-
+set %RUNE QWL_SWL_RWL_PWL
+set %SCROLL WTL
+
+goSub Control
+
+Viajar:
+{
+                  ;TECLA [Ctrl] [Shift] [Alt]
+  onHotKey G Ctrl ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+  {
+    findItem %RUNE C_ , #BACKPACKID
+    if #findCnt > 0
+    {
+      event Macro 1 0 .p32
+      set %lTargetID #lTargetID
+      set #lTargetID #findID
+      set #lTargetKind 1
+      target
+      event Macro 22 0
+      set #lTargetID %lTargetID
+    }
+    else
+    {
+      event ExMsg #charID 3 1970 [ , RUNA , ]
+    }
+    wait 3
+  }
+}
+goTo Viajar
+
+sub Control
+{
+  findItem * C_ , #backpackID
+  if #findCnt = 0
+  {
+    set %xBackpackID #cliXRes + #cliLeft
+    set %yBackpackID #cliYRes + #cliTop
+    nextCPos %xBackpackID %yBackpackID
+    wait 10
+    event SysMessage ~ * , Abriendo la 'Mochila' de , #SPC , #charName , ...
+    event Macro 8 7
+  }
+  wait 6
+  findItem %SCROLL C_ , #BACKPACKID
+  if #findCnt = 0
+  {
+    sound
+    set #sysMsgCol 1970
+    event SysMessage ~[ATENCION]: No hay ningun 'Pergamino De Recall' en el primer nivel de tu 'Mochila'.
+  }
+  findItem %RUNE C_ , #BACKPACKID
+  if #findCnt = 0
+  {
+    sound
+    set #sysMsgCol 1970
+    event SysMessage ~[ATENCION]: No hay ninguna 'Runa' en el primer nivel de tu 'Mochila'.
+  }
+  if #findCnt > 1
+  {
+    sound
+    set #sysMsgCol 1970
+    event SysMessage ~[ATENCION]: Hay #findCnt runas en el primer nivel de tu 'Mochila'.
+  }
+  return
+}

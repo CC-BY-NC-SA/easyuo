@@ -1,0 +1,445 @@
+;|---------------------------------------------------------------------|
+;| Contador de tiempo aproximado de curacion y resurreccion con vendas |
+;|                                                                     |
+;|                    Resaltador de notificaciones                     |
+;|                                                                     |
+;|   'Reactive Armor'/'Armadura Reactiva' ('Flam Sanct') automatico    |
+;|---------------------------------------------------------------------|
+;* 'Reactive Armor'/'Armadura Reactiva' ('Flam Sanct') automatico, cada vez que se reciba daño fisico.
+;* Desactivable/Activable a traves de la tecla, o combinacion de ellas, asociada.
+;* Si el personaje 'logra mantener la concentracion' mediante la habilidad de 'Boxeo' necesaria, resultando en que no falle el hechizo conjurado a causa de un golpe, no se hara uso del 'Reactive Armor'/'Armadura Reactiva' ('Flam Sanct').
+;** Para resaltar la notificacion vinculada a la posibilidad de toma de pociones, 'Ya puedes tomar pociones de nuevo!.', se depende de tenerla activada ('.perfil' > 'Aviso Pocion (ON)').
+
+linesPerCycle 20
+set *charBotin
+set %sBotinCnt 99999999999999999
+set %count_jIndex #jIndex ;Previous of journal's last line
+set %maxContDelay_sysTime 999999999999999999
+set %autoReactArmor #TRUE
+
+goSub Informacion
+goSub Filtrar_Diario
+
+sub Filtrar_Diario
+{
+  while %maxContDelay_sysTime > #sysTime
+  {
+    if #jIndex > %count_jIndex
+    {
+      set %count_jIndex %count_jIndex + 1
+      scanJournal %count_jIndex
+      goSub Filtros
+    }
+    goSub setAutoReactArmor
+  }
+  return
+}
+
+sub Filtros
+{
+  if ( %autoReactArmor = #TRUE && #jColor = 0 ) && ( te_dispara. in #journal || te_corta. in #journal || te_machaca. in #journal || te_aplasta. in #journal || te_golpea. in #journal || te_perfora. in #journal )
+  {
+    goSub reactArmor
+    return
+  }
+  if #jColor = 68 && Ya_puedes_tomar_pociones_de_nuevo!. in #journal
+  {
+    event ExMsg #charID 3 1391 [ , POCION , ]
+    return
+  }
+  if #jColor = 946
+  {
+    if ( Te_curas_a_ti_mismo. = #journal ) || Neutralizas_el_veneno. = #journal
+    {
+      event ExMsg #charID 3 1391 [ , VENDADO , ]
+      set %contCuracionVenda 0
+      return
+    }
+    if No_tienes_mana_suficiente_para_este_hechizo. = #journal
+    {
+      event ExMsg #charID 3 1970 [ , MANA , ]
+      return
+    }
+    if Ahora_estas_bajo_la_proteccion_de_los_guardias. = #journal
+    {
+      sound
+      goSub consecuencias
+      return
+    }
+    if ( ti_mismo. notIn #journal && Curas_a in #journal ) || Neutralizas_el_veneno_del_cuerpo_de in #journal
+    {
+      event ExMsg %lTargetBandage 3 1391 [ , VENDADO , ]
+      set %contCuracionVenda 0
+      return
+    }
+    if Estas_demasiado_lejos_y_has_perdido_la_concentracion!. = #journal
+    {
+      event ExMsg %lTargetBandage 3 1970 [ , NO VENDADO , ]
+      set %contCuracionVenda 0
+      return
+    }
+    if Te_resistes_a_la_magia. = #journal
+    {
+      event ExMsg #charID 3 1391 [ , RESISTO , ]
+      return
+    }
+    if Necesitas in #journal
+    {
+      if Necesitas_Ajo_para_este_hechizo. = #journal
+      {
+        event ExMsg #charID 3 1970 [ , AJO , ]
+        return
+      }
+      if Necesitas_Raiz_de_Mandragora_para_este_hechizo. = #journal
+      {
+        event ExMsg #charID 3 1970 [ , RAIZ DE M. , ]
+        return
+      }
+      if Necesitas_Musgo_de_Sangre_para_este_hechizo. = #journal
+      {
+        event ExMsg #charID 3 1970 [ , MUSGO DE S. , ]
+        return
+      }
+      if Necesitas_Perla_Negra_para_este_hechizo. = #journal
+      {
+        event ExMsg #charID 3 1970 [ , PERLA NEGRA , ]
+        return
+      }
+      if Necesitas_Ceniza_Sulfurosa_para_este_hechizo. = #journal
+      {
+        event ExMsg #charID 3 1970 [ , CENIZA S. , ]
+        return
+      }
+      if Necesitas_Seda_de_Aracnido_para_este_hechizo. = #journal
+      {
+        event ExMsg #charID 3 1970 [ , SEDA DE A. , ]
+        return
+      }
+      if Necesitas_Ginseng_para_este_hechizo. = #journal
+      {
+        event ExMsg #charID 3 1970 [ , GINSENG , ]
+        return
+      }
+      if Necesitas_Belladona_para_este_hechizo. = #journal
+      {
+        event ExMsg #charID 3 1970 [ , BELLADONA , ]
+        return
+      }
+    }
+    if No_puedes_alcanzar_eso. = #journal || No_lo_alcanzas. = #journal
+    {
+      event ExMsg #lObjectID 3 1391 [ , ACERCATE , ]
+      return
+    }
+    if ( Un_campo_antimagia_entorpece_los_hechizos. = #journal ) || No_puedes_resucitar_a_alguien_cerca_de_una_casa! = #journal
+    {
+      event ExMsg #charID 3 1970 [ , AREA , ]
+      return
+    }
+  }
+  if #jColor = 1197 && resiste_la_energia_magica!. in #journal
+  {
+    event ExMsg #lTargetID 3 1970 [ , RESISTE , ]
+    return
+  }
+  if #jColor = 0
+  {
+    if Debes_de_esperar in #journal && segundos_para_usar_una_pocion_de_nuevo. in #journal
+    {
+      goSub getRestante
+      return
+    }
+    if ha_caido._Eres_el_contendiente_que_mayor_numero_de_heridas_le_ha_causado in #journal
+    {
+      event ExMsg #charID 3 1391 [ , BOTIN , ]
+      return
+    }
+    if Ya_puedes_usar_el_orbe_petrificador_de_nuevo! = #journal
+    {
+      event ExMsg #charID 3 1391 [ , ORBE 100 , % , ]
+      return
+    }
+    if No_tienes_suficiente_mana!. = #journal
+    {
+      event ExMsg #charID 3 1970 [ , MANA , ]
+      return
+    }
+    if Recobras_la_sensibilidad_en_las_piernas!. = #journal
+    {
+      event ExMsg #charID 3 1391 [ , MONTURA , ]
+      return
+    }
+    if ( Debes_esperar_un_tiempo_para_abrir_el_cadaver_de in #journal ) || Debes_esperar_un_tiempo_para_cortar_el_cadaver_de in #journal
+    {
+      event ExMsg #charID 3 1970 [ , ESPERA , ]
+      return
+    }
+    if No_tienes_los_ingredientes_necesarios!. = #journal
+    {
+      event ExMsg #charID 3 1970 [ , REGS VIAJE , ]
+      return
+    }
+    if No_te_quedan_cargas. = #journal
+    {
+      event ExMsg #charID 3 1970 [ , ORBE SIN CARGAS , ]
+      return
+    }
+    if La_runa_ha_perdido_su_poder!. = #journal || La_runa_se_desvanece_por_completo. = #journal
+    {
+      event ExMsg #charID 3 1970 [ , RUNA SIN CARGAS , ]
+      return
+    }
+    if No_puedes_usar_el_orbe_si_estas_oculto! = #journal
+    {
+      event ExMsg #charID 3 1970 [ , OCULTO , ]
+      return
+    }
+    if ( No_puedes_ser_resucitado_dentro_de_la_casa!. = #journal ) || No_puedes_lanzar_hechizos_de_area_dentro_de_una_casa!. = #journal
+    {
+      event ExMsg #charID 3 1970 [ , AREA , ]
+      return
+    }
+  }
+  if ( #jColor = 1064 ) && Sientes_como_resistes_la_energia_magica!. = #journal
+  {
+    event ExMsg #charID 3 1391 [ , RESISTO , ]
+    return
+  }
+  if #jColor = 50
+  {
+    if No_tienes_mana_suficiente_para_lanzar_el_hechizo. = #journal
+    {
+      event ExMsg #charID 3 1970 [ , MANA , ]
+      return
+    }
+    if Piel_de_Cadaver_deja_de_hacer_efecto. = #journal
+    {
+      event ExMsg #charID 3 1970 [ , SIN NECROSIS , ]
+      return
+    }
+    if Has_sido_maldecido in #journal
+    {
+      event ExMsg #charID 3 1970 [ , MALDECIDO , ]
+      return
+    }
+    if No_tienes_los_reactivos_necesarios. = #journal
+    {
+      event ExMsg #charID 3 1970 [ , REGS NIGRO , ]
+      return
+    }
+  }
+  if #jColor = 34
+  {
+    if Ves_a notIn #journal
+    {
+      if intentando_curarse in #journal
+      {
+        goSub contTiempo 17 1125
+        return
+      }
+      if intentando_curar_a in #journal
+      {
+        set %lTargetBandage #lTargetID
+        goSub contTiempo 6 1000
+        return
+      }
+      if intentando_resucitar_a in #journal
+      {
+        set %lTargetBandage #lTargetID
+        goSub contTiempo 12 1125
+        return
+      }
+    }
+  }
+  if ( #jColor = 33 ) && No_puedes_resucitar_en_las_inmediaciones_de_una_casa_o_barco!. = #journal
+  {
+    event ExMsg #charID 3 1970 [ , AREA , ]
+    return
+  }
+  if ( #jColor = 63 ) && [GRUPO]: in #journal && ha_sido_asesinado_por in #journal
+  {
+    event ExMsg #charID 3 1970 [ , CAIDO , ]
+    return
+  }
+  if ( #jColor = 1152 ) && Ya_puedes_realizar_una_llamada_oscura_de_nuevo. = #journal
+  {
+    event ExMsg #charID 3 1391 [ , LLAMADA OSCURA , ]
+    return
+  }
+  if #sCnt > %sBotinCnt
+  {
+    set *charBotin
+    set %sBotinCnt 999999999999999999
+  }
+  return
+}
+
+sub contTiempo
+{
+  for %contCuracionVenda %1 1
+  {
+    set %maxContDelay_sysTime #sysTime + %2
+    if %contCuracionVenda > 3
+    {
+      event ExMsg #charID 3 1970 %contCuracionVenda
+    }
+    else
+    {
+      event ExMsg #charID 3 1391 %contCuracionVenda
+    }
+    goSub Filtrar_Diario
+  }
+  set %maxContDelay_sysTime 999999999999999999
+  return
+}
+
+sub setAutoReactArmor
+{
+                    ;TECLA [Ctrl] [Shift] [Alt]
+  onHotKey PAUSE    ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+  {
+    if %autoReactArmor = #TRUE
+    {
+      set %autoReactArmor #FALSE
+      event ExMsg #charID 3 1970 [ , AUTOREACTIVE , ]
+    }
+    else
+    {
+      set %autoReactArmor #TRUE
+      event ExMsg #charID 3 1391 [ , AUTOREACTIVE , ]
+    }
+    wait 3
+  }
+  return
+}
+
+sub reactArmor
+{
+  set %next_count_jIndex %count_jIndex + 1
+  scanJournal %next_count_jIndex
+  if #jColor <> 34  || logra_mantener_la_concentracion notIn #journal || Ves_a in #journal
+  {
+    event Macro 15 6
+  }
+  else
+  {
+    set %count_jIndex %next_count_jIndex
+  }
+  return
+}
+
+sub consecuencias
+{
+  findItem #charID G_0
+  if #findCnt = 1
+  {
+    if #findRep = 1
+    {
+      event ExMsg #charID 3 1391 [ , GUARDIAS , ]
+    }
+    else
+    {
+      event ExMsg #charID 3 1970 [ , GUARDIAS , ]
+    }
+  }
+  return
+}
+
+sub getRestante
+{
+  str Del #journal 1 17
+  set %journal #strRes
+  str Len %journal
+  set %delLimit #strRes
+  str Pos %journal _
+  str Del %journal #strRes %delLimit
+  set %sPocionCnt #strRes + 1
+  if %sPocionCnt <> 1
+  {
+    set %eventExMsgCol 1970
+  }
+  else
+  {
+    set %eventExMsgCol 1391
+  }
+  event ExMsg #charID 3 %eventExMsgCol [ , ESPERA , #SPC , - , %sPocionCnt , - , ]
+  return
+}
+
+sub setBotin
+{
+  str Pos #journal #DOT
+  set %delStart #strRes - 9
+  str Len #journal
+  str Del #journal %delStart #strRes
+  set %transCharName #strRes
+  str Count %transCharName _
+  set %transCnt #strRes
+  for %i 1 %transCnt
+  {
+    str Pos %transCharName _
+    set %index #strRes
+    str Del %transCharName %index 1
+    str Ins #strRes #SPC %index
+    set %transCharName #strRes
+  }
+  str Len *charBotin
+  if #strRes = 0
+  {
+    set *charBotin %transCharName
+    set %sBotinCnt #sCnt + 60
+  }
+  else
+  {
+    str Pos *charBotin %transCharName
+    if #strRes = 0
+    {
+      str Ins *charBotin %transCharName , #SMC 1
+      set %sBotinCnt #sCnt + 60
+    }
+  }
+  return
+}
+
+sub Informacion
+{
+  set %vendas ZLF
+  set %contVendas 0
+  set #sysMsgCol 1391
+  event SysMessage Contador aproximado de curaciones con vendas -Activado-
+  findItem * C_ , #backpackID
+  if #findCnt = 0
+  {
+    set %xBackpackID #cliXRes + #cliLeft
+    set %yBackpackID #cliYRes + #cliTop
+    nextCPos %xBackpackID %yBackpackID
+    wait 10
+    event SysMessage ~ * , Abriendo la mochila de , #SPC , #charName , ...
+    event Macro 8 7
+  }
+  wait 6
+  findItem %vendas C_ , #BACKPACKID
+  if #findCnt > 0
+  {
+    for #findIndex 1 #findCnt
+    {
+      set %contVendas %contVendas + #findStack
+    }
+    if %contVendas > 20
+    {
+      event SysMessage ~ Hay %contVendas vendas en el primer nivel de tu mochila.
+    }
+    else
+    {
+      set #sysMsgCol 1970
+      event SysMessage ~[PRECAUCION]: Hay %contVendas vendas en el primer nivel de tu mochila.
+    }
+  }
+  else
+  {
+    sound
+    set #sysMsgCol 1970
+    event SysMessage ~[ATENCION]: No hay ninguna venda en el primer nivel de tu mochila.
+  }
+  return
+}

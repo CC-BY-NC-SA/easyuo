@@ -1,0 +1,453 @@
+;|-----------------------------------------------------|
+;| Bajarse y/o subirse de una entre varias 'Monturas'  |
+;|-----------------------------------------------------|
+;*  El radio de alcance como para asi subirse a una 'Montura' es de 1 casilla, pero como en practicamente todas las ocasiones iremos corriendo hacia ella... contemplo 2
+;   debido al tiempo de respuesta por defecto (si no lo disminuyo es por no impactar a los ordenadores mas humildes ejecutando varios programas en paralelo)
+
+;** Para que el programa no dependa de que inicialmente selecciones una o varias 'Monturas' con cada personaje, hasta que presiones la tecla escape (Esc), se recomienda que
+;   asignes su/s #LOBJECTID o #LTARGETID a la variable %MONTURAS elegida ('%MONTURAS . CHARID')
+
+;   Por ejemplo, si me conecto con el personaje 'Edward Allen Carter Jr.' y su #CHARID tiene asignado el valor 'MYHERO'... no tendria mas que modificar una de las 6 variables que se nos ofrecen,
+;   tantas como personajes estamos autorizados a utilizar en una unica cuenta:
+;                     set %MONTURAS . MYHERO
+;                     set %MONTURAS . CHRIDB
+;                     set %MONTURAS . CHRIDC
+;                     set %MONTURAS . CHRIDD
+;                     set %MONTURAS . CHRIDE
+;                     set %MONTURAS . CHRIDF
+
+;   El objetivo de este procedimiento es, mediante un correcto mantenimiento de las 'Monturas' utilizadas por cada personaje, diferenciarlas para que este programa sea lo mas efectivo posible,
+;   sin necesidad de abrir y/o iniciar otra version para un personaje concreto
+
+;   Ejemplo practico: muero con un personaje, acudo con otro lo mas rapido posible a la misma localizacion en la que he fallecido, me encuentro con que la 'Montura' del difunto sigue viva...
+;                     cabe la posibilidad de que, usando cualquiera de estas funcionalidades, estemos a tiro del lanzamiento de una moneda al aire por ambas 'Monturas', de la que no y si soy dueño,
+;                     estar hasta a un par de casillas de distancia
+
+;   Un identificador (ID) se compone de 6, 5 o 7 letras, para añadir otro/s al menos tiene/n que separarse por un guion bajo (_)
+;   Primer ejemplo:   set %MONTURAS . MYHERO IDENTS_DESEIS_CINCO_OOOOOOO_SIETEE_LETRAS
+;   Segundo ejemplo:  set %MONTURAS . MYHERO IDENTS_DESEIS_CINCO_OOOOOOO_SIETEE_LETRAS_
+;   IMPORTANTE, CADA VEZ QUE UNA 'MONTURA' SE META EN EL ESTABLO, VARIARA DE IDENTIFICADOR (ID)
+;   Por ejemplo, con el personaje 'Edward Allen Carter Jr.', #CHARID 'MYHERO', tengo configurada una 'Montura' con el #LOBJECTID/#LTARGETID 'IDENTI':
+;                     set %MONTURAS . MYHERO IDENTI
+;   Si posteriormente dejo dicha 'Montura', 'IDENTI', en el establo, cuando la saque tendra otro identificador (distinto de 'IDENTI'), es decir, equivaldra a no haberla configurado:
+;                     set %MONTURAS . MYHERO
+
+;   Por amenizar el inicio ('Start') de mis multiples programas, considere que, una vez configurada al menos una 'Montura' con 'ID' valido, no vuelva a mostrarse el asistente de seleccion de 'Monturas'
+;   ('1.- Selecciona una 'Montura' o pulsa la tecla 'Esc'.')
+
+set %MONTURAS . VNBPYC PJNTIB
+set %MONTURAS . OCRI YWHRGC_VVAOSD_HYAOSD
+set %MONTURAS . GFWX SMUBM
+set %MONTURAS . CHRIDD
+set %MONTURAS . CHRIDE
+set %MONTURAS . CHRIDF
+
+;*** El uso de 'Monturas' de tipo 'Objeto' esta completamente automatizado, ya sean las que pueden ser 'Desencogidas' o las invocables ('Etereas' y 'De Faccion'), las primeras se priorizan sobre el resto,
+;    ya que no dependen de que el personaje este hasta cerca de 3 segundos "Paralizado"
+
+;    Por 'Monturas' de tipo 'Objeto' 'Desencogibles', para asi evitar incalculables, a la vez que surrealistas, despistes, se entienden las 'Encogibles' que no son 'lealizables':
+;      - Llama
+;            Blanca y marron
+;      - Caballos
+;         * Crin larga
+;            Marron oscuro
+;         * Crin corta
+;            Marron claro
+;            Gris
+;      - Osos
+;            Negro
+;            Marron muy oscuro
+;            Pardo
+;            Polar
+
+;    Se recomienda llevarlas apiladas en una esquina del primer nivel de la 'Mochila' del personaje, no habra ningun problema siempre y cuando esta este abierta,
+;    el motivo para estas no estar dentro de otro contenedor alojado en la misma es que nuestra 'Mochila' es la primera en descubrirse tras revivir o conectar
+;    siempre y cuando muramos o desconectemos con ella abierta
+
+;    Cada vez que el programa considera 'Desencoger' una 'Montura' 'Encogida', perteneciente al listado anterior, la mantiene configurada hasta la parada del mismo ('Stop /All'),
+;    como se ha mencionado anteriormente, siempre se podria llegar a posteriormente configurarla manualmente ('%MONTURAS . MYHERO IDENTS_DESEIS_CINCO_OOOOOOO_SIETEE_LETRAS_NOLEAL')
+
+;A1.- No estando el personaje 'Paralizado' o 'Petrificado' y si ubicandose a 1 o en la misma casilla de una o varias 'Monturas':
+;A1.1- Se subira a una de ellas siempre y cuando no este 'Muerta' o 'Petrificada' (hallandose a 1 o 0 pasos de distancia)
+;A1.1.1- Si la elegida esta 'Paralizada', intentara subirse a una de las posibles alternativas (situadas a 1 o 0 casillas y no 'Muertas' ni 'Petrificadas')
+;A2.- Corriendo en direccion a una 'Montura' y estando 'en linea de vision', podremos llegar a anticiparnos en un radio de 2 casillas
+;A3.- Corriendo en direccion a una 'Montura' pero estando a 3 casillas de distancia, sin necesidad de estar 'en linea de vision', la 'Montura' automaticamente escogida nos notificara '[ACERCATE]'
+;A4.- Del apartado precedente deducimos que se nos informara de lo mismo estando a un radio de 2 casillas de la 'Montura' escogida ('[ACERCATE]')
+;A5.- Si estamos a mas de 2 casillas de distancia de cualquiera de nuestras 'Monturas', o las que estan a menos permanecen 'Muertas' o 'Petrificadas':
+;A5.1- Automaticamente se 'Desencoge' una 'Montura' 'Encogida' y nuestro personaje subira a la misma, por lo tanto debemos evitar movernos, de la cual podremos des/montarnos
+;      ('la mantiene configurada hasta la parada de este programa ('Stop /All')')
+;A5.2- Automaticamente se invocara y, tras hasta cerca de 3 segundos "Paralizado", subira nuestro personaje a una 'Montura' 'Eterea' o 'De Faccion', la misma de la que solo podremos desmontarnos manualmente
+;      (como ya se ha indicado, para montarla sera necesario que no haya ninguna 'Montura' configurada, 'Desencogidas' no 'lealizables' desde el inicio del programa ('Start') incluidas, no 'Muerta' y
+;      no 'Petrificada' en un radio de 2 casillas)
+;B1.- No estando el personaje 'Petrificado', podremos bajarnos de una 'Montura' siempre y cuando estemos alejados mas de 2 casillas de cualquiera de nuestras 'Monturas' configuradas,
+;     'Desencogidas' no 'lealizables' desde el inicio del programa ('Start') incluidas, no 'Muertas' y no 'Petrificadas'
+;B1.1- Si estamos montados sobre una 'Montura' invocable ('Eterea' o 'De Faccion'), tan pronto como nos bajemos de ella, nos volveremos a subir
+;B1.1.1- Pese a que el unicamente desmontar al personaje de una 'Montura' invocable es algo factible, haria al programa mas ineficiente, por lo tanto solo cabe recordar que
+;        PARA BAJARNOS DE UNA 'MONTURA' INVOCABLE, TENDREMOS QUE HACERLO DE FORMA MANUAL
+;B1.1.1.1- Recordando el principal objetivo del concepto de desmonta... el de que nuestra 'Montura' tendra como labor el entorpecer el avance enemigo, por lo tanto la de llegarnos a evitar posibles daños
+;          o incentivar todo lo contrario hacia lo hostil, veo totalmente contraproducente que algo tan poco relevante como lo comentado en el punto anterior ('B1.1.1') demore lo mas salientable
+
+set %shrinkMONTURAS GKM_BRM_YQM_BJO_UQM_SQM_RJM
+set %shrinkEtherealMONTURAS GKM_HNO_QRM_PNO_RYAB_FJM_YFO_RJM_DJO_CWO_DMF
+set %shrinkFactionMONTURAS GKM_FJM_QRM_NRM_PRM
+
+goSub control
+goSub scanHotKey
+
+sub control
+{
+  set #sysMsgCol 1391
+  event SysMessage Subirse y/o bajarse de una entre varias 'Monturas' -Activado-
+  if #cliLogged = 1
+  {
+    if #charGhost = NO
+    {
+      findItem * C_ , #backpackID
+      if #findCnt = 0
+      {
+        set %xBackpackID #cliXRes + #cliLeft
+        set %yBackpackID #cliYRes + #cliTop
+        nextCPos %xBackpackID %yBackpackID
+        event SysMessage ~ * , Abriendo la 'Mochila' de , #SPC , #charName , ...
+        wait 10
+        event Macro 8 7
+      }
+    }
+  }
+  return
+}
+
+sub setMonturas
+{
+  loopSetMontura:
+  {
+    set #sysMsgCol 1391
+    event SysMessage ~1.- Selecciona una 'Montura' o pulsa la tecla 'Esc'.
+    set #targCurs 1
+    target
+    set #lTargetKind 1
+    set %lTargetID #lTargetID
+    loopTargetMontura:
+    {
+      if #targCurs = 0
+      {
+        onHotKey ESC
+        {
+          sound
+          display okcancel ¿Seleccion de 'Monturas' finalizada?
+          if #dispRes = OK
+          {
+            return
+          }
+          goTo loopSetMontura
+        }
+        goSub setMontura #lTargetID
+        set #sysMsgCol 1391
+        event SysMessage Identificador , #SPC , ' , #lTargetID , ' , #SPC , vinculado como 'Montura'...
+        set #lTargetID %lTargetID
+        goTo loopSetMontura
+      }
+      goTo loopTargetMontura
+    }
+  }
+  return
+}
+
+sub setMontura
+{
+  str Right %MONTURAS . #charID 1
+  if #strRes <> _
+  {
+    set %MONTURAS . #charID %MONTURAS . #charID , _ , %1
+  }
+  else
+  {
+    set %MONTURAS . #charID %MONTURAS . #charID , %1
+  }
+  return
+}
+
+sub scanHotKey
+{
+  Loop:
+  {
+                         ;TECLA [Ctrl] [Shift] [Alt]
+    onHotKey F1 Alt          ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+    {
+      goSub getOffOnMontura
+    }
+  }
+  goTo Loop
+}
+
+sub getOffOnMontura
+{
+  findItem %MONTURAS . #charID G_2
+  set %lObjectID #lObjectID
+  if #findCnt = 0
+  {
+    goSub getOffMontura
+  }
+  else
+  {
+    goSub getOnMontura
+  }
+  set #lObjectID %lObjectID
+  return
+}
+
+sub getOffMontura
+{
+  set #lObjectID #charID
+  event Macro 17 0
+  set %getOff #FALSE
+  wait 6
+  findItem %MONTURAS . #charID G_2
+  if #findCnt > 0
+  {
+    for #findIndex 1 #findCnt
+    {
+      if #findCol <> 961 && #findCol <> 1154
+      {
+        set %getOff #TRUE
+        break
+      }
+    }
+  }
+  if %getOff = #FALSE
+  {
+    goSub summonMontura
+  }
+  return
+}
+
+sub getOnMontura
+{
+  if A notIn #charStatus
+  {
+    if #findCnt > 0
+    {
+      set %findID #FALSE
+      for #findIndex 1 #findCnt
+      {
+        if #findCol <> 961 && #findCol <> 1154
+        {
+          set #lObjectID #findID
+          event Macro 17 0
+          set %findID #findID
+          set %findDist #findDist
+          break
+        }
+      }
+      if %findID <> #FALSE
+      {
+        wait 6
+        findItem %findID G_3
+        if #findCnt = 1
+        {
+          if #findCol <> 961 && #findCol <> 1154
+          {
+            if %findDist = 2
+            {
+              if #findDist < 2
+              {
+                event Macro 17 0
+              }
+              else
+              {
+                if #findDist = 2
+                {
+                  goSub reGetOnMontura
+                }
+                else
+                {
+                  goSub summonMontura
+                }
+              }
+            }
+            else
+            {
+              goSub reGetOnMontura 1
+            }
+          }
+          else
+          {
+            goSub reGetOnMontura 1
+          }
+        }
+      }
+      else
+      {
+        goSub summonMontura
+      }
+    }
+  }
+  else
+  {
+    event ExMsg #charID 3 1970 [ , PARALIZADO , ]
+  }
+  return
+}
+
+sub reGetOnMontura
+{
+  ignoreItem %findID
+  findItem %MONTURAS . #charID G_1
+  set %auxFindID #FALSE
+  if #findCnt > 0
+  {
+    for #findIndex 1 #findCnt
+    {
+      if #findCol <> 961 && #findCol <> 1154
+      {
+        set #lObjectID #findID
+        event Macro 17 0
+        wait 6
+        findItem %auxFindID G_2
+        if #findCnt = 0
+        {
+          set %auxFindID #findID
+          break
+        }
+      }
+    }
+  }
+  ignoreItem %findID
+  if %auxFindID = #FALSE
+  {
+    if %0 = 0
+    {
+      event ExMsg %findID 3 1391 [ , ACERCATE , ]
+    }
+    else
+    {
+      goSub summonMontura
+    }
+  }
+  return
+}
+
+sub summonMontura
+{
+  if A notIn #charStatus
+  {
+    findItem %shrinkMONTURAS CA
+    set %getShrinkMONTURA #FALSE
+    if #findCnt > 0
+    {
+      for #findIndex 1 #findCnt
+      {
+        if #findCol = 0 || #findCol = 2305 || #findCol = 2301 || #findCol = 1940 || #findCol = 1115
+        {
+          set #lObjectID #findID
+          event Macro 17 0
+          wait 6
+          set %findCol #findCol
+          set %getShrinkMONTURA #TRUE
+          findItem * G_1
+          {
+            if #findCnt > 0
+            {
+              for #findIndex 1 #findCnt
+              {
+                if #findCol = %findCol && #findRep = 3
+                {
+                  set #lObjectID #findID
+                  goSub setMontura #findID
+                  event Macro 17 0
+                  return
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    if %getShrinkMONTURA = #FALSE
+    {
+      findItem %shrinkEtherealMONTURAS CA
+      if #findCnt > 0
+      {
+        for #findIndex 1 #findCnt
+        {
+          if #findCol = 1953
+          {
+            set #lObjectID #findID
+            event Macro 17 0
+            wait 70
+            set %getShrinkMONTURA #TRUE
+            break
+          }
+        }
+      }
+      if %getShrinkMONTURA = #FALSE
+      {
+        findItem %shrinkFactionMONTURAS CA
+        if #findCnt > 0
+        {
+          for #findIndex 1 #findCnt
+          {
+            if #findCol = 2006 || #findCol = 39 || #findCol = 902
+            {
+              set #lObjectID #findID
+              event Macro 17 0
+              wait 70
+              set %getShrinkMONTURA #TRUE
+              break
+            }
+          }
+        }
+      }
+    }
+    if %getShrinkMONTURA = #FALSE
+    {
+      event ExMsg #charID 3 1970 [ , MONTURA , ]
+    }
+  }
+  else
+  {
+    event ExMsg #charID 3 1970 [ , PARALIZADO , ]
+  }
+  return
+}
+
+;                 -Documentacion-
+;
+;                                 #LOBJECTTYPE  #FINDCOL
+; > 'Objetos' de tipo 'Montura'
+;   - Llamas                        GKM
+;         Blanca y marron           GKM              0
+;   - Caballos
+;      * Crin larga
+;         Marron oscuro             BRM              0
+;      * Crin corta
+;         Marron claro              YQM              0
+;         Gris                      BJO              0
+;   - Osos
+;         Negro                     UQM              2305
+;         Marron muy oscuro         UQM              1115
+;         Pardo                     SQM              1940
+;         Polar                     RJM              2301
+;
+
+;                                 #LOBJECTTYPE  #FINDCOL  #AlianzaFINDCOL  #CorsarioFINDCOL  #GuardiaNegraFINDCOL
+; > 'Objetos' de tipo
+;   'Montura Eterea' y 'De Faccion'
+;   - Llamas                        GKM              1953      ¿2006?           ¿39?              ¿902?
+;   - Caballos                                       1953
+;      * Crin larga                 DJO
+;      * Crin corta                 FJM                        ¿2006?           ¿39?              ¿902?
+;   - Escarabajos                   HNO              1953
+;   - Zostrichs                     QRM              1953      ¿2006?           ¿39?              ¿902?
+;   - Caballo de Huesos             PNO              1953
+;   - Dragones de Huesos            RYAB             1953
+;   - Dragones de Pantano           ?                1953
+;   - Unicornios                    YFO              1953
+;   - Osos                          RJM              1953
+;   - Ki-rins                       ?                1953
+;   - Ridgebacks                    ¿NNO?            1953
+;   - Reptalons                     ?                1953
+;   - Hiryus                        CWO              1953
+;   - Oclock                        NRM                        ¿2006?           ¿39?              ¿902?
+;   - Orn                           PRM                        ¿2006?           ¿39?              ¿902?
+;   - "Bola De Invocacion"          DMF              1953

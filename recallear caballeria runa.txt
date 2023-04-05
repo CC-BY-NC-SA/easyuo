@@ -1,0 +1,174 @@
+;|--------------------------------|
+;| 'Viaje Sagrado' mediante runa  |
+;|--------------------------------|
+;* PON LA RUTA DEL FILTRO (set %filterRuta L:\A\RUTA\DEL\FILTRO.txt), en el caso de que tenga espacios sustituyelos por ' , #SPC , ':
+
+set %filterRuta C:\Users\blago\Documents\Mis , #SPC , Documentos\Breixo\Macros , #SPC , EUO\PvP\filtro , #SPC , recallear , #SPC , caballeria , #SPC , runa.txt
+
+set #sysMsgCol 1391
+event SysMessage 'Viaje Sagrado' mediante 'Runa' automatico -Activado-
+set %RUNE QWL_SWL_RWL_PWL
+
+goSub Control
+
+Viajar:
+{
+  ;Situacion de riesgo, 'Viaje Sagrado' mediante 'Runa' despues de intentar tomarse una pocion de 'Invisibilidad':
+  ;* Si se ha consumido una pocion hace menos de 14 segundos aun no podremos tomar otra.
+  ;** En el caso de oficializarse un ataque durante el par de minutos anterior a la toma de la pocion de 'Invisibilidad' (.logout_seguro), distinto de 'Puedes desconectar de forma segura.', el efecto de esta se vera drasticamente reducido a un par de segundos.
+  ;*** En el caso de oficializarse un ataque durante los 54 segundos anteriores al 'Viaje Sagrado' se nos notificaran los segundos restantes.
+                  ;TECLA [Ctrl] [Shift] [Alt]
+  onHotKey G Ctrl ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+  {
+    chooseSkill Chiv Real
+    if #skill > 299
+    {
+      findItem %RUNE C_ , #BACKPACKID
+      if #findCnt > 0
+      {
+        goSub actosCobardes
+        if %actosCobardes = #FALSE
+        {
+          event Macro 1 0 .invisibilidad
+          goSub Viajar
+        }
+      }
+      else
+      {
+        event ExMsg #charID 3 1970 [ , RUNA , ]
+      }
+    }
+    else
+    {
+      event ExMsg #charID 3 1970 [ , CABALLERIA , ]
+    }
+    wait 3
+  }
+  ;Situacion fuera de riesgo, 'Viaje Sagrado' mediante 'Runa':
+    ;* En el caso de oficializarse un ataque durante los 54 segundos anteriores al 'Viaje Sagrado' se nos notificaran los segundos restantes.
+                  ;TECLA [Ctrl] [Shift] [Alt]
+  onHotKey G Shift Ctrl ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+  {
+    chooseSkill Chiv Real
+    if #skill > 299
+    {
+      findItem %RUNE C_ , #BACKPACKID
+      if #findCnt > 0
+      {
+        goSub actosCobardes
+        if %actosCobardes = #FALSE
+        {
+          goSub Viajar
+        }
+      }
+      else
+      {
+        event ExMsg #charID 3 1970 [ , RUNA , ]
+      }
+    }
+    else
+    {
+      event ExMsg #charID 3 1970 [ , CABALLERIA , ]
+    }
+    wait 3
+  }
+  ;Consultar la disponibilidad de 'Viaje Sagrado':
+  ;* En el caso de oficializarse un ataque durante los 54 segundos anteriores al 'Viaje Sagrado' se nos notificaran los segundos restantes.
+                  ;TECLA [Ctrl] [Shift] [Alt]
+  onHotKey G Shift ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+  {
+    chooseSkill Chiv Real
+    if #skill > 299
+    {
+      goSub actosCobardes
+    }
+    else
+    {
+      event ExMsg #charID 3 1970 [ , CABALLERIA , ]
+    }
+    wait 3
+  }
+}
+goTo Viajar
+
+sub Viajar
+{
+  event Macro 1 0 .caballeria03
+  set %lTargetID #lTargetID
+  target 36s
+  set #lTargetID #findID
+  set #lTargetKind 1
+  event Macro 22 0
+  set #lTargetID %lTargetID
+  return
+}
+
+sub actosCobardes
+{
+  call %filterRuta #TRUE
+  if %actosCobardes = #FALSE
+  {
+    event ExMsg #charID 3 1391 [ , VIAJE SAGRADO , ]
+  }
+  else
+  {
+    str Pos %journal :
+    str Del %journal 1 #strRes
+    set %journal #strRes
+    str Del %journal 1 11
+    set %journal #strRes
+    str Len %journal
+    set %delLimit #strRes
+    str Pos %journal _
+    str Del %journal #strRes %delLimit
+    if #strRes > 64
+    {
+      set %actosCobardes #TRUE
+      set %sActosCobardes #strRes - 64
+      if %sActosCobardes <> 1
+      {
+        set %eventExMsgCol 1970
+      }
+      else
+      {
+        set %eventExMsgCol 1391
+      }
+      event ExMsg #charID 3 %eventExMsgCol [ , ESPERA , #SPC , - , %sActosCobardes , - , ]
+    }
+    else
+    {
+      set %actosCobardes #FALSE
+      event ExMsg #charID 3 1391 [ , VIAJE SAGRADO , ]
+    }
+  }
+  return
+}
+
+sub Control
+{
+  findItem * C_ , #backpackID
+  if #findCnt = 0
+  {
+    set %xBackpackID #cliXRes + #cliLeft
+    set %yBackpackID #cliYRes + #cliTop
+    nextCPos %xBackpackID %yBackpackID
+    wait 10
+    event SysMessage ~ * , Abriendo la 'Mochila' de , #SPC , #charName , ...
+    event Macro 8 7
+  }
+  wait 6
+  findItem %RUNE C_ , #BACKPACKID
+  if #findCnt = 0
+  {
+    sound
+    set #sysMsgCol 1970
+    event SysMessage ~[ATENCION]: No hay ninguna 'Runa' en el primer nivel de tu 'Mochila'.
+  }
+  if #findCnt > 1
+  {
+    sound
+    set #sysMsgCol 1970
+    event SysMessage ~[ATENCION]: Hay #findCnt runas en el primer nivel de tu 'Mochila'.
+  }
+  return
+}

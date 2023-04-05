@@ -1,0 +1,26 @@
+;|----------------------------------------|
+;| Quitarse Maldicion de la Edad y veneno |
+;|----------------------------------------|
+
+set #sysMsgCol 1391
+event sysmessage Quitarse 'Maldicion de la Edad' y veneno con 'Caballeria' automatico -Activado-
+
+Loop:
+{
+  if #mana > 9
+  {
+    if Has_sido_maldecido in #sysMsg
+    {
+      event Macro 1 0 .caballeria07
+      target
+      event Macro 23 0
+    }
+    if A notIn #charStatus && ( Has_sido_envenenado in #sysMsg || C in #charStatus )
+    {
+      event Macro 1 0 .caballeria01
+      wait 1s
+      wait 10
+    }
+  }
+}
+goTo Loop
