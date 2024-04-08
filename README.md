@@ -22,7 +22,7 @@ Optional scripts recommended for warrior (W) characters in UA - ordered by relev
 - W14 - 'desmonta monta.txt'
 - W15 - 'selector flechas magicas.txt'
 
-Optional scripts recommended for mage (M) characters in UA - ordered by relevance -:
+Optional scripts recommended for mage (M) characters, bard-tamer as well, in UA - ordered by relevance -:
 
 - M01 - 'contador vendas (mago, 25 dex) pocion resist orbe piel maldi guards montu regs runa +- [autoreactive].txt'
 - M02 - 'recallear perga runa.txt'
