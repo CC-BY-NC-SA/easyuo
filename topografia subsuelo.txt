@@ -1,0 +1,63 @@
+;* Situarse a la altura del suelo, evitar desniveles (montañas, escaleras, etc.).
+;** Asignar los segundos de demora deseados entre lineas de informacion (set %sec).
+;*** Se recomienda pausar el programa ('Pause') cuando la informacion nos sature, se reanudara iniciandolo de nuevo ('Start').
+
+set %sec 1
+
+display ok Iniciando topografia del subsuelo en el mayor cuadrante visible a una resolucion de ventana del juego de 800x600 y formado por los puntos cardinales (S-N,W-E)...
+
+set %west800x600visibleRadio #charPosX - 6
+set %east800x600visibleRadio #charPosX + 6
+set %north800x600visibleRadio #charPosY - 6
+set %south800x600visibleRadio #charPosY + 6
+set %locationsScanned ( ABS ( %south800x600visibleRadio - %north800x600visibleRadio ) + 1 ) * ( ABS ( %south800x600visibleRadio - %north800x600visibleRadio ) + 1 )
+set %locationCnt 0
+set %tileCnt 0
+
+tile init
+
+for %X %west800x600visibleRadio %east800x600visibleRadio
+{
+  for %Y %north800x600visibleRadio %south800x600visibleRadio
+  {
+    tile cnt %X %Y #cursKind
+    set %layer_ammount 0
+    set %location
+    for %cnt #tileCnt 1
+  	{
+    	tile Get %X %Y %cnt #cursKind
+    	if #tileZ < #charPosZ
+    	{
+    	  if %location <> #TRUE
+    	  {
+          set %location #TRUE
+          set %locationCnt %locationCnt + 1
+          set #sysMsgCol 1165
+          event sysMessage %locationCnt , #DOT , - , #SPC , ( , %X , , , %Y , )
+    	    wait %sec , s
+    	  }
+    	  set %layer_ammount %layer_ammount + 1
+        str Len #tileFlags
+        if #strRes = 0
+    	  {
+          set %tileFlags ?
+    	  }
+    	  else
+    	  {
+          set %tileFlags #tileFlags
+    	  }
+    	  set #sysMsgCol 69
+    	  event sysMessage ~ , ~ , ~ , < , Tile , #SPC , %layer_ammount , > ,  #spc , ( , %layer_ammount , / , #tileCnt , )
+        event sysMessage ~ , ~ , ~ , ~ , ~ , Height , : , #spc , #tileZ
+        event sysMessage ~ , ~ , ~ , ~ , ~ , Name , : , #spc , %tileFlags
+        event sysMessage ~ , ~ , ~ , ~ , ~ , Type , : , #spc , #tiletype
+        set %tileCnt %tileCnt + 1
+        wait %sec , s
+      }
+	  }
+  }
+}
+wait 2s
+set #sysMsgCol 1391
+event sysMessage Resultados: , #SPC , %tileCnt , #SPC , casillas distribuidas en , #SPC , %locationCnt , #SPC , localizaciones , , , #SPC , de un total de , #SPC , %locationsScanned , #DOT
+stop

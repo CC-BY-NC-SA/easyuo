@@ -1,0 +1,70 @@
+;* Asignar los segundos de demora deseados entre lineas de informacion (set %sec).
+;** Se recomienda pausar el programa ('Pause') cuando la informacion nos sature, se reanudara iniciandolo de nuevo ('Start').
+
+set %sec 1
+
+onCardinalHotKey:
+{
+                   ;TECLA [Ctrl] [Shift] [Alt]
+  onHotKey 1 Shift ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+  {
+    set %X #charPosX
+    set %Y #charPosY - 1 ;Topografia sobre la casilla que esta al North del Personaje
+    goSub getInformacion
+  }
+                   ;TECLA [Ctrl] [Shift] [Alt]
+  onHotKey 2 Shift ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+  {
+    set %X #charPosX + 1 ;Topografia sobre la casilla que esta al East del Personaje
+    set %Y #charPosY
+    goSub getInformacion
+  }
+                   ;TECLA [Ctrl] [Shift] [Alt]
+  onHotKey 3 Shift ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+  {
+    set %X #charPosX
+    set %Y #charPosY + 1 ;Topografia sobre la casilla que esta al South del Personaje
+    goSub getInformacion
+  }
+                   ;TECLA [Ctrl] [Shift] [Alt]
+  onHotKey 4 Shift ;TECLA: A-Z|0-9|F1-F12|ESC|BACK|TAB|ENTER|PAUSE|CAPSLOCK|SPACE|PGDN|PGUP|END|HOME|LEFT|RIGHT|UP|DOWN|PRNSCR|INSERT|DELETE|NUMLOCK|SCROLLLOCK
+  {
+    set %X #charPosX - 1 ;Topografia sobre la casilla que esta al West del Personaje
+    set %Y #charPosY
+    goSub getInformacion
+  }
+}
+goTo onCardinalHotKey
+
+sub getInformacion
+{
+  Tile init
+  Tile cnt %X %Y #cursKind
+  set %layer_ammount 0
+  set #sysMsgCol 1165
+  event ExMsg #charID 3 1391 ( , #charPosX , , , #charPosY , , , #charPosZ , )
+  event sysMessage ( , %X , , , %Y , )
+  for %cnt 1 #tileCnt
+  {
+    tile Get %X %Y %cnt #cursKind
+    set %layer_ammount %layer_ammount + 1
+    str Len #tileFlags
+    if #strRes = 0
+    {
+      set %tileFlags ?
+    }
+    else
+    {
+      set %tileFlags #tileFlags
+    }
+    set #sysMsgCol 69
+    event sysMessage ~ , ~ , ~ , < , Tile , #SPC , %layer_ammount , > ,  #spc , ( , %layer_ammount , / , #tileCnt , )
+    event sysMessage ~ , ~ , ~ , ~ , ~ , Height , : , #spc , #tileZ
+    event sysMessage ~ , ~ , ~ , ~ , ~ , Name , : , #spc , %tileFlags
+    event sysMessage ~ , ~ , ~ , ~ , ~ , Type , : , #spc , #tiletype
+    set %tileCnt %tileCnt + 1
+    wait %sec , s
+  }
+  return
+}
+stop
